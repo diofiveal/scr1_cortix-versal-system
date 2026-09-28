@@ -1,5 +1,8 @@
 # Estimate the maximum SCR1 PL-clock frequency from the already routed design.
-# Usage:
+# Usage from the Tcl Console of an open Vivado project:
+#   source estimate_fmax.tcl
+#
+# Usage in batch mode:
 #   vivado -mode batch -source scripts/scripts/vivado/estimate_fmax.tcl \
 #     -tclargs /absolute/path/to/vd100_scr1.xpr
 #
@@ -7,16 +10,31 @@
 # one-cycle requirement. It does not re-synthesize or re-route at the computed
 # frequency. Re-implement and check timing at any proposed operating clock.
 
-if {[llength $argv] != 1} {
-    error "Usage: estimate_fmax.tcl /absolute/path/to/vd100_scr1.xpr"
+if {[llength $argv] > 1} {
+    error "Usage: source estimate_fmax.tcl, or use -tclargs /absolute/path/to/vd100_scr1.xpr"
 }
 
-set project_file [file normalize [lindex $argv 0]]
-if {![file isfile $project_file]} {
-    error "Vivado project not found: $project_file"
+set opened_project_here 0
+if {[llength $argv] == 1} {
+    set project_file [file normalize [lindex $argv 0]]
+    if {![file isfile $project_file]} {
+        error "Vivado project not found: $project_file"
+    }
+    if {[current_project -quiet] ne ""} {
+        error "A Vivado project is already open. Run 'source estimate_fmax.tcl' without arguments, or close it before using -tclargs."
+    }
+    open_project $project_file
+    set opened_project_here 1
+} else {
+    set project_object [current_project -quiet]
+    if {$project_object eq ""} {
+        error "No Vivado project is open. Open the project first, then run 'source estimate_fmax.tcl'."
+    }
+    set project_dir [get_property DIRECTORY $project_object]
+    set project_name [get_property NAME $project_object]
+    set project_file [file join $project_dir "${project_name}.xpr"]
 }
 
-open_project $project_file
 open_run impl_1
 
 set scr1_clock [get_clocks -quiet clk_pl_0]
@@ -71,4 +89,6 @@ foreach line $lines {
 }
 close $fh
 puts "Saved: $report_file"
-close_project
+if {$opened_project_here} {
+    close_project
+}
