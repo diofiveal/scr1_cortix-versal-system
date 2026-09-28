@@ -73,7 +73,11 @@
   `define SCR1_RVC_EXT
   parameter int unsigned SCR1_MTVEC_BASE_WR_BITS = 26;
   `define SCR1_MTVEC_MODE_EN
+  // VD100 may retain the MAX feature set while selecting SCR1's already
+  // implemented iterative multiplier for FPGA timing closure.
+`ifndef SCR1_VD100_ITERATIVE_MUL
   `define SCR1_FAST_MUL
+`endif
   `define SCR1_MPRF_RST_EN
   `define SCR1_MCOUNTEN_EN
   `define SCR1_DBG_EN
