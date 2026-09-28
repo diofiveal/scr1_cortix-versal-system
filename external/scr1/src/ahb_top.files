@@ -1,0 +1,16 @@
+top/scr1_dmem_router.sv
+top/scr1_imem_router.sv
+top/scr1_dp_memory.sv
+top/scr1_tcm.sv
+top/scr1_timer.sv
+top/icache.sv
+top/victim_icache.sv
+top/icache_controller.sv
+top/scr1_icache_top.sv
+top/dcache.sv
+top/dcache_controller.sv
+top/scr1_write_buffer.sv
+top/scr1_dcache_top.sv
+top/scr1_dmem_ahb.sv
+top/scr1_imem_ahb.sv
+top/scr1_top_ahb.sv

@@ -1,0 +1,4 @@
+top/scr1_icache.sv
+top/icache_fsm.sv
+top/icache_datapath.sv
+tb/scr1_icache_tb.sv
