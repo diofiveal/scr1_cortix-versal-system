@@ -87,6 +87,16 @@ class IntegrationTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertTrue(tcl.call("info", "complete", path.read_text()))
 
+    def test_create_project_runs_routed_implementation_and_checks_timing(self):
+        script = (ROOT / "scripts/scripts/vivado/create_project.tcl").read_text()
+        settings = (ROOT / "scripts/scripts/vivado/project_info.tcl").read_text()
+        self.assertIn("variable run_implementation 1", settings)
+        self.assertIn("launch_runs impl_1 -to_step route_design", script)
+        self.assertIn("wait_on_run impl_1", script)
+        self.assertIn("report_timing_summary -report_unconstrained", script)
+        self.assertIn("foreach delay_type {max min} check_name {setup hold}", script)
+        self.assertIn("get_drc_violations -quiet -filter {SEVERITY == Error}", script)
+
     def test_clock_reset_and_metadata(self):
         tcl = mock_bd()
         def prop(obj, key):

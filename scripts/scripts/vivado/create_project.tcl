@@ -1,5 +1,6 @@
 # =============================================================================
-# One-command Vivado 2023.2 project creation + BD generation + synthesis.
+# One-command Vivado 2023.2 project creation, BD generation, synthesis and
+# routed implementation. Device Image/XSA remain an explicit qualified step.
 # Run from any directory:
 #   vivado -mode batch -source scripts/scripts/vivado/create_project.tcl
 # =============================================================================
@@ -77,4 +78,44 @@ if {$::vd100::run_synthesis} {
     report_drc -file [file join $report_dir synth_drc.rpt]
 
     puts "Synthesis reports: $report_dir"
+
+    if {$::vd100::run_implementation} {
+        close_design
+        reset_run impl_1
+        launch_runs impl_1 -to_step route_design -jobs $::vd100::jobs
+        wait_on_run impl_1
+
+        set impl_status [get_property STATUS [get_runs impl_1]]
+        puts "Implementation status: $impl_status"
+        if {![string match "*route_design Complete*" $impl_status]} {
+            error "Implementation did not complete route_design successfully: $impl_status"
+        }
+
+        open_run impl_1
+        report_utilization -file [file join $report_dir routed_utilization.rpt]
+        report_timing_summary -report_unconstrained \
+            -file [file join $report_dir routed_timing_summary.rpt]
+        report_timing -max_paths 50 \
+            -file [file join $report_dir routed_worst_50_paths.rpt]
+        report_cdc -file [file join $report_dir routed_cdc.rpt]
+        report_drc -file [file join $report_dir routed_drc.rpt]
+
+        foreach delay_type {max min} check_name {setup hold} {
+            set paths [get_timing_paths -quiet -delay_type $delay_type -max_paths 1]
+            if {[llength $paths] != 1} {
+                error "No constrained $check_name path found after implementation"
+            }
+            set slack [get_property SLACK [lindex $paths 0]]
+            puts "Worst routed $check_name slack: $slack ns"
+            if {![string is double -strict $slack] || $slack < 0.0} {
+                error "Routed $check_name timing failed: slack = $slack ns"
+            }
+        }
+
+        set drc_errors [get_drc_violations -quiet -filter {SEVERITY == Error}]
+        if {[llength $drc_errors] != 0} {
+            error "Implementation has [llength $drc_errors] Error-severity DRC violation(s)"
+        }
+        puts "Implementation reports: $report_dir"
+    }
 }

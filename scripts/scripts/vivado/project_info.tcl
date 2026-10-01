@@ -49,7 +49,10 @@ namespace eval vd100 {
     variable ddr_base         0x00000000
     variable ddr_range        0x80000000
 
-    # create_project.tcl starts synthesis by default, matching the requested
-    # one-command bring-up flow. Set this to 0 while debugging BD creation.
+    # create_project.tcl starts synthesis and routed implementation by default.
+    # Set both to 0 while debugging BD creation. Implementation depends on a
+    # successful synthesis run and stops at route_design; PDI/XSA use the
+    # separate guarded build_device_image.tcl flow.
     variable run_synthesis 1
+    variable run_implementation 1
 }

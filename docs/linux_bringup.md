@@ -63,9 +63,12 @@ vivado -mode batch -source scripts/scripts/vivado/create_project.tcl
 vivado -mode batch -source scripts/scripts/vivado/build_device_image.tcl -tclargs build/vivado-linux/vd100_scr1/vd100_scr1.xpr build/hardware/cortix_scr1.xsa
 ```
 
-Первый скрипт создаёт BD/wrapper и запускает synthesis. Второй выполняет
-implementation → **Generate Device Image** (`write_device_image`, Versal PDI),
-проверяет routed setup/hold slack и Error DRC, затем экспортирует:
+Первый скрипт создаёт BD/wrapper, запускает synthesis и implementation до
+`route_design`, формирует post-route timing/CDC/DRC/utilization reports и
+останавливается с ошибкой при отрицательном setup/hold slack или Error DRC.
+Второй продолжает успешный routed run до **Generate Device Image**
+(`write_device_image`, Versal PDI), повторно квалифицирует результат и
+экспортирует:
 
 ```tcl
 write_hw_platform -fixed -include_bit build/hardware/cortix_scr1.xsa
