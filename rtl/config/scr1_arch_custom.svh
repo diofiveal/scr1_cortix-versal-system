@@ -38,16 +38,9 @@
 //------------------------------------------------------------------------------
 // Recommended SCR1 architecture configuration
 //------------------------------------------------------------------------------
+// This matches the current integration target:
 // RV32IMC + debug + TDU + IPIC + TCM + BPU + IMEM skid buffer.
 `define SCR1_CFG_RV32IMC_MAX
-
-// On this Versal board the one-cycle 32x32 multiplier in the MAX preset
-// creates a routed path from TDU through cascaded DSP58s to the register file.
-// Select SCR1's existing radix-2 multiplier instead. The M extension remains
-// implemented; MUL/MULH* become multi-cycle operations. Remove this define to
-// restore the original one-cycle multiplier if the performance tradeoff is
-// unacceptable after measuring the application workload.
-`define SCR1_VD100_ITERATIVE_MUL
 
 //------------------------------------------------------------------------------
 // Reset / trap-vector addresses
