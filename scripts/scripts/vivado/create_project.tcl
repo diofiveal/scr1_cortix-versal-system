@@ -18,7 +18,10 @@ if {![string match "${::vd100::vivado_version}*" $current_version]} {
 file mkdir $::vd100::build_root
 file mkdir $::vd100::project_dir
 
-create_project -force $::vd100::project_name $::vd100::project_dir \
+if {[file exists [file join $::vd100::project_dir ${::vd100::project_name}.xpr]]} {
+    error "Project already exists; open it or choose a new build_root in project_info.tcl. Refusing to overwrite a working build."
+}
+create_project $::vd100::project_name $::vd100::project_dir \
     -part $::vd100::part
 
 set_property target_language Verilog [current_project]

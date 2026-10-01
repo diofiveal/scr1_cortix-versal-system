@@ -6,7 +6,7 @@
 #   vivado -mode batch -source scripts/scripts/vivado/estimate_fmax.tcl \
 #     -tclargs /absolute/path/to/vd100_scr1.xpr
 #
-# This calculation assumes the worst clk_pl_0 -> clk_pl_0 setup path has a
+# This calculation assumes the worst same-SCR1-clock setup path has a
 # one-cycle requirement. It does not re-synthesize or re-route at the computed
 # frequency. Re-implement and check timing at any proposed operating clock.
 
@@ -37,16 +37,27 @@ if {[llength $argv] == 1} {
 
 open_run impl_1
 
-set scr1_clock [get_clocks -quiet clk_pl_0]
+# The Linux build drives top-level clk from pll_pl_scr1, not directly from
+# CIPS clk_pl_0. Resolve the actual clock on the unchanged board-top net.
+set scr1_clock [get_clocks -quiet -of_objects [get_nets -quiet clk]]
 if {[llength $scr1_clock] != 1} {
-    error "Expected exactly one SCR1 clock named clk_pl_0 in the routed design"
+    set pll_output [get_pins -hier -quiet -filter {NAME =~ *pll_pl_scr1*/clk_out1}]
+    set scr1_clock [get_clocks -quiet -of_objects $pll_output]
 }
+if {[llength $scr1_clock] != 1} {
+    # Backwards compatibility with earlier successful non-PLL projects.
+    set scr1_clock [get_clocks -quiet clk_pl_0]
+}
+if {[llength $scr1_clock] != 1} {
+    error "Cannot identify a unique SCR1 clock on top-level clk / pll_pl_scr1"
+}
+set scr1_clock_name [get_property NAME $scr1_clock]
 
 set period_ns [get_property PERIOD $scr1_clock]
 set paths [get_timing_paths -setup -from $scr1_clock -to $scr1_clock \
     -max_paths 1 -sort_by slack]
 if {[llength $paths] != 1} {
-    error "No constrained setup path found from clk_pl_0 to clk_pl_0"
+    error "No constrained same-clock setup path found for $scr1_clock_name"
 }
 
 set worst_path [lindex $paths 0]
@@ -75,11 +86,11 @@ file mkdir $report_dir
 set report_file [file join $report_dir scr1_fmax_estimate.txt]
 set fh [open $report_file w]
 set lines [list \
-    "SCR1 clock: clk_pl_0" \
+    "SCR1 clock: $scr1_clock_name" \
     [format "Constrained period: %.3f ns (%.3f MHz)" $period_ns $f_target_mhz] \
     [format "Worst setup slack: %.3f ns" $slack_ns] \
     [format "Estimated limiting period: %.3f ns" $limiting_period_ns] \
-    [format "Estimated Fmax of this routed clk_pl_0 domain: %.3f MHz" $f_est_mhz] \
+    [format "Estimated Fmax of this routed SCR1 domain: %.3f MHz" $f_est_mhz] \
     "Start: $start_pin" \
     "End:   $end_pin" \
     "Estimate only: re-run implementation and timing at the proposed frequency."]

@@ -2,13 +2,13 @@
 # Address map for the first VD100 + SCR1 integration.
 #
 # A72-visible PL aperture:
-#   0xA000_0000 .. 0xA000_0FFF : scr1_control
-#   0xA001_0000 .. 0xA001_FFFF : Boot BRAM AXI-Lite adapter
-#   0xA002_0000 .. 0xA002_0FFF : platform_ready GPIO
+#   0xA400_0000 .. 0xA400_0FFF : scr1_control
+#   0xA401_0000 .. 0xA401_FFFF : Boot BRAM AXI-Lite adapter
+#   0xA402_0000 .. 0xA402_0FFF : platform_ready GPIO
 #
 # SCR1 top translates its local MMIO aliases before entering the BD:
-#   0xFF00_0000 -> 0xA000_0000
-#   0xFFFF_0000 -> 0xA001_0000
+#   0xFF00_0000 -> 0xA400_0000
+#   0xFFFF_0000 -> 0xA401_0000
 # DDR remains 0x0000_0000 .. 0x7FFF_FFFF.
 # =============================================================================
 
@@ -59,6 +59,10 @@ proc vd100_assign_addresses {} {
     foreach cci_space $cci_spaces cci_ddr $cci_ddr_segments {
         vd100_map_segment $cci_space $cci_ddr $ddr_base $ddr_range
     }
+    vd100_map_segment "versal_cips_0/PMC_NOC_AXI_0" \
+        [vd100_find_noc_ddr_segment axi_noc_0 S05_AXI] $ddr_base $ddr_range
+    vd100_map_segment "versal_cips_0/LPD_AXI_NOC_0" \
+        [vd100_find_noc_ddr_segment axi_noc_0 S06_AXI] $ddr_base $ddr_range
 
     # Do not create a second A72->DDR route through M_AXI_FPD/SmartConnect.
     vd100_exclude_segment $ps_space $noc_pl_ddr

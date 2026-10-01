@@ -1,0 +1,6 @@
+/build/
+/reports/
+__pycache__/
+*.jou
+*.log
+.Xil/

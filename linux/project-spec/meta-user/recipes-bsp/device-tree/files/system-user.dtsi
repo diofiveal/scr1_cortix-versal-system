@@ -1,0 +1,37 @@
+/include/ "system-conf.dtsi"
+
+/ {
+    reserved-memory {
+        #address-cells = <2>;
+        #size-cells = <2>;
+        ranges;
+        scr1_shared: scr1-shared@7f000000 {
+            reg = <0x0 0x7f000000 0x0 0x01000000>;
+            no-map;
+        };
+    };
+    /* Real A72 apertures in project_info.tcl; no guessed GIC IRQ number.
+     * No generic-uio binding or automatic SCR1 start in this boot baseline.
+     */
+    scr1_host: scr1@a4000000 {
+        compatible = "diofiveal,scr1-host";
+        reg = <0x0 0xa4000000 0x0 0x1000>,
+              <0x0 0xa4010000 0x0 0x10000>;
+        reg-names = "control", "boot-bram";
+        memory-region = <&scr1_shared>;
+        status = "okay";
+    };
+};
+
+/* ALINX course_s2 board quirks retained for the on-board SD1 slot and USB. */
+&sdhci1 {
+    disable-wp;
+    no-1-8-v;
+};
+
+&dwc3_0 {
+    status = "okay";
+    dr_mode = "host";
+};
+
+/* No LCD/VDMA/camera/GEM1 phandles: those blocks are not in this design. */

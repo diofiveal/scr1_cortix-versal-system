@@ -35,19 +35,44 @@ proc vd100_create_external_ports {pl_freq_hz} {
     create_bd_port -dir I scr1_irq_i
 }
 
+proc vd100_create_scr1_pll {cips_pl_clk} {
+    set input_hz [get_property CONFIG.FREQ_HZ $cips_pl_clk]
+    if {![string is double -strict $input_hz] || $input_hz <= 0} {
+        error "CIPS pl0_ref_clk has invalid CONFIG.FREQ_HZ: '$input_hz'"
+    }
+    # Versal uses clk_wizard:1.0 and vector-valued output parameters, not
+    # the 7-series clk_wiz:6.0/CLKOUT1_REQUESTED_OUT_FREQ parameter set.
+    set pll [vd100_create_ip pll_pl_scr1 xilinx.com:ip:clk_wizard:1.0]
+    set requested [format %.6f $::vd100::scr1_freq_mhz]
+    set_property -dict [list \
+        CONFIG.PRIM_IN_FREQ [format %.6f [expr {$input_hz / 1000000.0}]] \
+        CONFIG.PRIM_SOURCE {No_buffer} \
+        CONFIG.CLKOUT_USED {true,false,false,false,false,false,false} \
+        CONFIG.CLKOUT_PORT {clk_out1,clk_out2,clk_out3,clk_out4,clk_out5,clk_out6,clk_out7} \
+        CONFIG.CLKOUT_REQUESTED_OUT_FREQUENCY "$requested,100.000,100.000,100.000,100.000,100.000,100.000,100.000" \
+        CONFIG.CLKOUT_REQUESTED_PHASE {0.000,0.000,0.000,0.000,0.000,0.000,0.000} \
+        CONFIG.CLKOUT_REQUESTED_DUTY_CYCLE {50.000,50.000,50.000,50.000,50.000,50.000,50.000} \
+        CONFIG.CLKOUT_DRIVES {BUFG,BUFG,BUFG,BUFG,BUFG,BUFG,BUFG} \
+        CONFIG.USE_LOCKED {true} \
+        CONFIG.USE_RESET {false}] $pll
+    connect_bd_net $cips_pl_clk [get_bd_pins $pll/clk_in1]
+    return $pll
+}
+
 proc vd100_create_pl {} {
-    # Create/configure CIPS first so its exact PL0 clock metadata is known before
-    # the external AXI ports are created.  On Vivado 2023.2 a nominal 100 MHz
-    # CIPS clock can report FREQ_HZ=99999001; use that exact value everywhere.
+    # Configure CIPS and PLL before creating external interfaces. Read the
+    # PLL output's exact Hz; do not copy input FREQ_HZ to SCR1 interfaces.
     set cips [vd100_create_cips]
     set cips_pl_clk [vd100_require_one \
         [get_bd_pins -quiet $cips/pl0_ref_clk] \
         "CIPS pl0_ref_clk pin"]
-    set pl_freq_hz [get_property CONFIG.FREQ_HZ $cips_pl_clk]
-    if {$pl_freq_hz eq ""} {
-        error "CIPS pl0_ref_clk has no CONFIG.FREQ_HZ metadata"
+    set pll [vd100_create_scr1_pll $cips_pl_clk]
+    set pl_freq_hz [get_property CONFIG.FREQ_HZ [get_bd_pins $pll/clk_out1]]
+    if {![string is double -strict $pl_freq_hz] || $pl_freq_hz <= 0 ||
+        abs($pl_freq_hz - $::vd100::scr1_freq_mhz * 1000000.0) > 100000.0} {
+        error "PLL output metadata '$pl_freq_hz' does not match requested $::vd100::scr1_freq_mhz MHz"
     }
-    puts "INFO: CIPS PL0 clock metadata = ${pl_freq_hz} Hz"
+    puts "INFO: pll_pl_scr1 output metadata = ${pl_freq_hz} Hz"
 
     vd100_create_external_ports $pl_freq_hz
     set noc [vd100_create_noc]
@@ -72,9 +97,6 @@ proc vd100_create_pl {} {
 
     set const0 [vd100_create_ip const_zero xilinx.com:ip:xlconstant:1.1]
     set_property -dict [list CONFIG.CONST_WIDTH {1} CONFIG.CONST_VAL {0}] $const0
-
-    set const1 [vd100_create_ip const_one xilinx.com:ip:xlconstant:1.1]
-    set_property -dict [list CONFIG.CONST_WIDTH {1} CONFIG.CONST_VAL {1}] $const1
 
     # -------------------------------------------------------------------------
     # AXI connectivity.
@@ -105,6 +127,13 @@ proc vd100_create_pl {} {
     connect_bd_intf_net [get_bd_intf_pins $cips/FPD_CCI_NOC_3] \
                         [get_bd_intf_pins $noc/S03_AXI]
 
+    # Keep the native Linux peripheral-DMA and firmware DDR paths. S04 stays
+    # the SCR1/SmartConnect route, preserving the existing address map.
+    connect_bd_intf_net [get_bd_intf_pins $cips/PMC_NOC_AXI_0] \
+                        [get_bd_intf_pins $noc/S05_AXI]
+    connect_bd_intf_net [get_bd_intf_pins $cips/LPD_AXI_NOC_0] \
+                        [get_bd_intf_pins $noc/S06_AXI]
+
     connect_bd_intf_net [get_bd_intf_ports DDR4] \
                         [get_bd_intf_pins $noc/CH0_DDR4_0]
 
@@ -117,7 +146,7 @@ proc vd100_create_pl {} {
     # -------------------------------------------------------------------------
     # Clocks.
     # -------------------------------------------------------------------------
-    connect_bd_net [get_bd_pins $cips/pl0_ref_clk] \
+    connect_bd_net [get_bd_pins $pll/clk_out1] \
         [get_bd_pins $cips/m_axi_fpd_aclk] \
         [get_bd_pins $sc/aclk] \
         [get_bd_pins $noc/aclk4] \
@@ -133,6 +162,10 @@ proc vd100_create_pl {} {
                    [get_bd_pins $noc/aclk2]
     connect_bd_net [get_bd_pins $cips/fpd_cci_noc_axi3_clk] \
                    [get_bd_pins $noc/aclk3]
+    connect_bd_net [get_bd_pins $cips/pmc_axi_noc_axi0_clk] \
+                   [get_bd_pins $noc/aclk5]
+    connect_bd_net [get_bd_pins $cips/lpd_axi_noc_clk] \
+                   [get_bd_pins $noc/aclk6]
 
     # -------------------------------------------------------------------------
     # Reset distribution.
@@ -144,7 +177,7 @@ proc vd100_create_pl {} {
     connect_bd_net [get_bd_pins $const0/dout] \
                    [get_bd_pins $rst/mb_debug_sys_rst] \
                    [get_bd_pins $rst/aux_reset_in]
-    connect_bd_net [get_bd_pins $const1/dout] \
+    connect_bd_net [get_bd_pins $pll/locked] \
                    [get_bd_pins $rst/dcm_locked]
 
     connect_bd_net [get_bd_pins $rst/interconnect_aresetn] \

@@ -1,0 +1,2 @@
+# Keep normal password-based petalinux login; use sudo -i for the root shell.
+CONFIG_sudo=y

@@ -13,7 +13,7 @@
 #   sys_clk_clk_n[0]
 #
 # The Clock Wizard / AXI NoC generated clocks are constrained by their AMD IP.
-# Do not add a second create_clock on the generated SCR1 100 MHz clock.
+# Do not add a second create_clock on the generated SCR1 PLL clock (~90 MHz).
 # =============================================================================
 
 set_property PACKAGE_PIN AB23 [get_ports {sys_clk_clk_p[0]}]

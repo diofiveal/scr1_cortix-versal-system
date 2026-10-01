@@ -13,9 +13,13 @@ namespace eval vd100 {
     variable part         "xcve2302-sfva784-1LP-e-S"
     variable vivado_version "2023.2"
     variable jobs 4
+    # Preserve the 90 MHz PLL configuration used to close SCR1 timing.
+    # CIPS keeps its nominal 100 MHz source; actual Hz come from BD metadata.
+    variable scr1_freq_mhz 90.0
 
-    # Build output is intentionally kept outside the source tree.
-    variable build_root  [file join $root build vivado]
+    # Generated output is separate from the versioned sources.
+    # A new directory keeps the previously successful non-Linux build intact.
+    variable build_root  [file join $root build vivado-linux]
     variable project_dir [file join $build_root $project_name]
 
     # Project source tree.

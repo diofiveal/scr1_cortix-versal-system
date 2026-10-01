@@ -10,6 +10,7 @@ proc vd100_build_bd {} {
         xilinx.com:ip:axi_noc:1.0 \
         xilinx.com:ip:smartconnect:1.0 \
         xilinx.com:ip:axi_gpio:2.0 \
+        xilinx.com:ip:clk_wizard:1.0 \
         xilinx.com:ip:proc_sys_reset:5.0 \
         xilinx.com:ip:util_ds_buf:2.2 \
         xilinx.com:ip:xlconstant:1.1] {
