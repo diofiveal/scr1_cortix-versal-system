@@ -10,6 +10,7 @@ proc vd100_build_bd {} {
         xilinx.com:ip:axi_noc:1.0 \
         xilinx.com:ip:smartconnect:1.0 \
         xilinx.com:ip:axi_gpio:2.0 \
+        xilinx.com:ip:axis_ila:1.2 \
         xilinx.com:ip:clk_wizard:1.0 \
         xilinx.com:ip:proc_sys_reset:5.0 \
         xilinx.com:ip:util_ds_buf:2.2 \
@@ -29,10 +30,13 @@ proc vd100_build_bd {} {
     source [file join $script_dir noc_config.tcl]
     source [file join $script_dir pl_config.tcl]
     source [file join $script_dir address_map.tcl]
+    source [file join $script_dir debug_config.tcl]
 
     vd100_create_pl
     vd100_assign_addresses
+    vd100_create_debug
 
     validate_bd_design
     save_bd_design
 }
+

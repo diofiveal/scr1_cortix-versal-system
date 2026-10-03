@@ -35,3 +35,8 @@
 };
 
 /* No LCD/VDMA/camera/GEM1 phandles: those blocks are not in this design. */
+
+/* SmartConnect has FPD and LPD aliases. Linux owns the FPD GPIO resource. */
+&axi_gpio_0 {
+    reg = <0x0 0xa4020000 0x0 0x1000>;
+};

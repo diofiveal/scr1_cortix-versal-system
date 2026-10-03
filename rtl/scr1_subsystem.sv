@@ -200,7 +200,12 @@ module scr1_subsystem #(
     // -------------------------------------------------------------------------
     output logic                         irq_to_a72_o,
 
-    output vd100_scr1_pkg::scr1_lifecycle_state_e lifecycle_state_o
+    output vd100_scr1_pkg::scr1_lifecycle_state_e lifecycle_state_o,
+
+    // Passive debug exports: no feedback into clocks, resets or lifecycle.
+    output wire                          debug_cpu_rst_no,
+    output wire [3:0]                    debug_axi_fault_code_o,
+    output wire [3*OUTSTANDING_WIDTH-1:0] debug_outstanding_o
 );
 
     logic scr1_cpu_rst_n;
@@ -242,6 +247,11 @@ module scr1_subsystem #(
     scr1_fault_code_e             hw_fault_code;
     logic [31:0]                  hw_fault_info0;
     logic [31:0]                  hw_fault_info1;
+
+    assign debug_cpu_rst_no = scr1_cpu_rst_n;
+    assign debug_axi_fault_code_o = hw_fault_code;
+    assign debug_outstanding_o = {dmem_write_outstanding,
+                                  dmem_read_outstanding, imem_read_outstanding};
 
         // Instruction Memory Interface
     logic [3:0]                             scr1_axi_imem_awid;

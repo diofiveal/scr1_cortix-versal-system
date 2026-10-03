@@ -407,7 +407,7 @@ package scr1_regs_pkg;
     localparam scr1_reg_data_t SCR1_HWCFG_VALID_MASK =
         32'h1FFF_FFFF;
 
-    localparam int unsigned SCR1_CONTROL_CLK_MHZ_V1 = 100;
+    localparam int unsigned SCR1_CONTROL_CLK_MHZ_V1 = 90;
 
     function automatic scr1_reg_data_t scr1_make_hw_config(
         input int unsigned outstanding_width_i,
@@ -430,22 +430,22 @@ package scr1_regs_pkg;
     // START_TIMEOUT / QUIESCE_TIMEOUT
     // =========================================================================
     //
-    // Units are control-clock cycles (100 MHz in v1).
+    // Units are control-clock cycles (90 MHz on VD100).
     // A programmed value of 0 disables the corresponding timeout.
     //
     // V1 defaults:
-    //   START_TIMEOUT   = 10,000,000 cycles = 100 ms @ 100 MHz
-    //   QUIESCE_TIMEOUT =    100,000 cycles =   1 ms @ 100 MHz
+    //   START_TIMEOUT   = 9,000,000 cycles = 100 ms @ 90 MHz
+    //   QUIESCE_TIMEOUT =    90,000 cycles =   1 ms @ 90 MHz
     //
     // These defaults are intentionally generous compared with normal bare-metal
     // start/drain latency while still preventing an infinite lifecycle stall.
     // =========================================================================
 
     localparam scr1_reg_data_t SCR1_START_TIMEOUT_RESET_VALUE =
-        32'd10_000_000;
+        SCR1_CONTROL_CLK_MHZ_V1 * 100_000;
 
     localparam scr1_reg_data_t SCR1_QUIESCE_TIMEOUT_RESET_VALUE =
-        32'd100_000;
+        SCR1_CONTROL_CLK_MHZ_V1 * 1_000;
 
 
     // =========================================================================
@@ -475,7 +475,7 @@ package scr1_regs_pkg;
         32'hFFFF_FFFF;
 
     localparam scr1_reg_data_t SCR1_WATCHDOG_PERIOD_DEFAULT_CYCLES =
-        32'd100_000_000;
+        SCR1_CONTROL_CLK_MHZ_V1 * 1_000_000;
 
     localparam scr1_reg_data_t SCR1_WATCHDOG_CFG_RESET_VALUE =
         SCR1_WATCHDOG_PERIOD_DEFAULT_CYCLES; // enable=0

@@ -19,7 +19,7 @@ namespace eval vd100 {
 
     # Generated output is separate from the versioned sources.
     # A new directory keeps the previously successful non-Linux build intact.
-    variable build_root  [file join $root build vivado-linux]
+    variable build_root  [file join $root build vivado-debug]
     variable project_dir [file join $build_root $project_name]
 
     # Project source tree.
@@ -45,9 +45,18 @@ namespace eval vd100 {
     variable ready_gpio_base  0xA4020000
     variable ready_gpio_range 0x00001000
 
-    # SCR1-visible DDR window used in the first implementation.
-    variable ddr_base         0x00000000
-    variable ddr_range        0x80000000
+    # DPC/XSDB uses the native CIPS LPD master on SmartConnect S03_AXI.
+    # These debug aliases are outside the 2-GiB DDR; no jtag_axi IP on Versal.
+    variable debug_ctrl_base  0x80000000
+    variable debug_boot_base  0x80010000
+    variable debug_gpio_base  0x80020000
+
+    # Full DDR for CCI/PMC/LPD native NoC routes; restricted DDR for SCR1.
+    variable linux_ddr_base   0x00000000
+    variable linux_ddr_range  0x80000000
+    variable scr1_ddr_base    0x7F000000
+    variable scr1_ddr_range   0x01000000
+    variable ila_depth       1024
 
     # create_project.tcl starts synthesis and routed implementation by default.
     # Set both to 0 while debugging BD creation. Implementation depends on a

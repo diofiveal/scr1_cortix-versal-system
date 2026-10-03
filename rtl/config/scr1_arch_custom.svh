@@ -11,12 +11,14 @@
 // is defined by the Vivado project.
 //
 // Memory map used by the VD100 SCR1 integration:
+//   Shared DDR: 0x7F00_0000 - 0x7FFF_FFFF (only external DDR allowed)
+//   Control   : 0xFF00_0000 - 0xFF00_0FFF (DMEM only, translated to A400)
 //   Boot BRAM : 0xFFFF_0000 - 0xFFFF_FFFF
 //   TCM       : 0xF000_0000 - 0xF000_FFFF
 //   Timer     : 0xF004_0000 - 0xF004_001F
 //
 // SCR1 core clock:
-//   100 MHz
+//   90 MHz (nominal; PLL metadata provides the exact implemented Hz)
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -28,7 +30,7 @@
 `define SCR1_PTFM_BLD_ID            32'h2026_0927
 
 // SCR1 clock frequency in Hz.
-`define SCR1_PTFM_CORE_CLK_FREQ     32'd100000000
+`define SCR1_PTFM_CORE_CLK_FREQ     32'd90000000
 
 //------------------------------------------------------------------------------
 // FPGA target

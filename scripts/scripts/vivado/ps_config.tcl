@@ -15,12 +15,14 @@ proc vd100_create_cips {} {
     # Disable the reference's camera/LCD/GEM1 EMIO controls: this top has none.
     # Retain GEM0 on MIO and both native PS/PMC DDR routes.
     foreach {key value} {
+        DEBUG_MODE JTAG
         PMC_CRP_PL0_REF_CTRL_FREQMHZ 100
         PMC_USE_PMC_NOC_AXI0 1
         PS_M_AXI_FPD_DATA_WIDTH 32
+        PS_M_AXI_LPD_DATA_WIDTH 32
         PS_NUM_FABRIC_RESETS 1
         PS_USE_M_AXI_FPD 1
-        PS_USE_M_AXI_LPD 0
+        PS_USE_M_AXI_LPD 1
         PS_USE_PMCPL_CLK0 1
         PS_USE_FPD_CCI_NOC 1
         PS_USE_FPD_CCI_NOC0 1
@@ -35,7 +37,7 @@ proc vd100_create_cips {} {
         dict set cfg $key $value
     }
     # ACT_FREQ/DIVISOR are computed by CIPS, not manually overridden.
-    set_property -dict [list CONFIG.CLOCK_MODE {Custom} \
+    set_property -dict [list CONFIG.DEBUG_MODE {JTAG} CONFIG.CLOCK_MODE {Custom} \
         CONFIG.PS_PMC_CONFIG $cfg] $cips
     return $cips
 }

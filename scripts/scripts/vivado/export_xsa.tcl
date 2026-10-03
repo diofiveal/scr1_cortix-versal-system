@@ -24,12 +24,14 @@ proc vd100_export_xsa {project_file output_file} {
     set bd [get_files -quiet */vd100_platform.bd]
     if {[llength $bd] != 1} {error "Expected the Cortix vd100_platform BD"}
     open_bd_design $bd
-    foreach cell {pll_pl_scr1 versal_cips_0 axi_noc_0} {
+    foreach cell {pll_pl_scr1 versal_cips_0 axi_noc_0 axis_ila_scr1} {
         if {[llength [get_bd_cells -quiet $cell]] != 1} {error "Missing $cell; recreate the Linux BD"}
     }
-    foreach pin {versal_cips_0/PMC_NOC_AXI_0 versal_cips_0/LPD_AXI_NOC_0} {
+    foreach pin {versal_cips_0/PMC_NOC_AXI_0 versal_cips_0/LPD_AXI_NOC_0
+                 versal_cips_0/M_AXI_LPD smartconnect_0/S03_AXI
+                 axis_ila_scr1/SLOT_0_AXI axis_ila_scr1/SLOT_4_AXI} {
         if {[llength [get_bd_intf_nets -quiet -of_objects [get_bd_intf_pins $pin]]] != 1} {
-            error "Native DDR route is not connected: $pin"
+            error "DDR/debug interface is not connected: $pin"
         }
     }
     validate_bd_design
@@ -57,7 +59,15 @@ proc vd100_export_xsa {project_file output_file} {
     # On Versal, -include_bit includes the generated device image (PDI).
     # Do not replace it with ALINX's design_1_wrapper.xsa/PDI.
     if {[file exists $output_file]} {error "Refusing to overwrite existing XSA: $output_file"}
+    set probes_file [file rootname $output_file].ltx
+    if {[file exists $probes_file]} {error "Refusing to overwrite existing LTX: $probes_file"}
+    # Probes and PDI must come from the same routed implementation.
+    write_debug_probes $probes_file
+    if {![file isfile $probes_file] || [file size $probes_file] == 0} {
+        error "No debug probes exported; inspect the opt_design AXI Debug Hub insertion"
+    }
     write_hw_platform -fixed -include_bit $output_file
+    puts "INFO: matching ILA probes exported: $probes_file"
     puts "INFO: XSA exported: $output_file"
     puts "INFO: Review unconstrained-path/CDC reports; SD boot is a separate hardware test."
     close_project
@@ -74,3 +84,4 @@ if {![info exists ::vd100_export_library_only]} {
     file mkdir [file dirname $output_file]
     vd100_export_xsa $project_file $output_file
 }
+

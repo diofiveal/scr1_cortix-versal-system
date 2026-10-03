@@ -38,6 +38,9 @@ module vd100_scr1_top (
     wire boot_violation;
     wire [31:0] boot_violation_addr;
     scr1_lifecycle_state_e lifecycle_state;
+    wire debug_cpu_rst_n;
+    wire [3:0] debug_axi_fault_code;
+    wire [11:0] debug_outstanding;
 
     // -------------------------------------------------------------------------
     // AXI4-Lite: platform -> SCR1 control
@@ -188,12 +191,12 @@ module vd100_scr1_top (
     wire        m_axi_dmem_rready;
 
     // Address-only aliases preserve AXI ordering/handshake semantics.
-    // SCR1 keeps the local FFxx_xxxx map; A72 uses the A0xx_xxxx PL aperture.
+    // SCR1 keeps the local FFxx_xxxx map; A72 uses the A4xx_xxxx PL aperture.
     function automatic logic [31:0] platform_address(input logic [31:0] a);
         if (a[31:16] == 16'hFFFF)
-            platform_address = 32'hA001_0000 | {16'd0, a[15:0]};
+            platform_address = 32'hA401_0000 | {16'd0, a[15:0]};
         else if (a[31:12] == 20'hFF000)
-            platform_address = 32'hA000_0000 | {20'd0, a[11:0]};
+            platform_address = 32'hA400_0000 | {20'd0, a[11:0]};
         else
             platform_address = a;
     endfunction
@@ -223,6 +226,10 @@ module vd100_scr1_top (
         .pl_rst_no              (rst_n),
         .platform_ready_o       (platform_ready),
         .scr1_irq_i             (irq_to_a72),
+        .debug_scr1_resetn_i     (debug_cpu_rst_n),
+        .debug_lifecycle_i       (lifecycle_state),
+        .debug_axi_fault_i       (debug_axi_fault_code),
+        .debug_outstanding_i     (debug_outstanding),
 
         .M_AXIL_CTRL_awaddr     (ctrl_awaddr),
         .M_AXIL_CTRL_awprot     (ctrl_awprot),
@@ -480,7 +487,10 @@ module vd100_scr1_top (
         .boot_bram_host_write_enable_o(boot_write_allowed),
         .clear_fault_o               (clear_fault),
         .irq_to_a72_o                (irq_to_a72),
-        .lifecycle_state_o           (lifecycle_state)
+        .lifecycle_state_o           (lifecycle_state),
+        .debug_cpu_rst_no            (debug_cpu_rst_n),
+        .debug_axi_fault_code_o      (debug_axi_fault_code),
+        .debug_outstanding_o         (debug_outstanding)
     );
 
     // -------------------------------------------------------------------------

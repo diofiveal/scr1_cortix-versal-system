@@ -77,10 +77,10 @@ proc vd100_create_pl {} {
     vd100_create_external_ports $pl_freq_hz
     set noc [vd100_create_noc]
 
-    # Three initiators (A72 FPD, SCR1 IMEM, SCR1 DMEM) and four targets
+    # Four initiators (A72 FPD, SCR1 IMEM/DMEM, DPC via LPD) and four targets
     # (DDR NoC, control, Boot BRAM adapter, readiness GPIO).
     set sc [vd100_create_ip smartconnect_0 xilinx.com:ip:smartconnect:1.0]
-    set_property -dict [list CONFIG.NUM_SI {3} CONFIG.NUM_MI {4}] $sc
+    set_property -dict [list CONFIG.NUM_SI {4} CONFIG.NUM_MI {4}] $sc
 
     set gpio [vd100_create_ip axi_gpio_0 xilinx.com:ip:axi_gpio:2.0]
     set_property -dict [list \
@@ -107,6 +107,10 @@ proc vd100_create_pl {} {
                         [get_bd_intf_pins $sc/S01_AXI]
     connect_bd_intf_net [get_bd_intf_ports S_AXI_DMEM] \
                         [get_bd_intf_pins $sc/S02_AXI]
+
+    # Versal has no jtag_axi IP. Native DPC transactions use the LPD aperture.
+    connect_bd_intf_net [get_bd_intf_pins $cips/M_AXI_LPD] \
+                        [get_bd_intf_pins $sc/S03_AXI]
 
     # PL/SCR1 path occupies S04_AXI.  S00..S03 are the four interleaved CCIs.
     connect_bd_intf_net [get_bd_intf_pins $sc/M00_AXI] \
@@ -148,6 +152,7 @@ proc vd100_create_pl {} {
     # -------------------------------------------------------------------------
     connect_bd_net [get_bd_pins $pll/clk_out1] \
         [get_bd_pins $cips/m_axi_fpd_aclk] \
+        [get_bd_pins $cips/m_axi_lpd_aclk] \
         [get_bd_pins $sc/aclk] \
         [get_bd_pins $noc/aclk4] \
         [get_bd_pins $gpio/s_axi_aclk] \
@@ -194,3 +199,4 @@ proc vd100_create_pl {} {
     connect_bd_net [get_bd_ports scr1_irq_i] \
                    [get_bd_pins $cips/pl_ps_irq0]
 }
+
