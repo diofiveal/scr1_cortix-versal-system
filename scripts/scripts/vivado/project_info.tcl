@@ -56,12 +56,11 @@ namespace eval vd100 {
     variable linux_ddr_range  0x80000000
     variable scr1_ddr_base    0x7F000000
     variable scr1_ddr_range   0x01000000
-    variable ila_depth       1024
+    variable ila_depth       4096
 
-    # create_project.tcl starts synthesis and routed implementation by default.
-    # Set both to 0 while debugging BD creation. Implementation depends on a
-    # successful synthesis run and stops at route_design; PDI/XSA use the
-    # separate guarded build_device_image.tcl flow.
+    # Default one-command flow includes synthesis, routing, timing/DRC checks,
+    # Device Image and a matched PDI/XSA/LTX bundle in build/hardware.
+    # Set both to 0 only for BD development (no hardware handoff is produced).
     variable run_synthesis 1
     variable run_implementation 1
 }

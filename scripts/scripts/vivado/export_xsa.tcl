@@ -3,23 +3,26 @@
 #   -tclargs project.xpr ?output.xsa?
 # This script does not launch/reset runs or invent a successful timing result.
 
-proc vd100_export_xsa {project_file output_file} {
+proc vd100_export_xsa {project_file output_file {already_open 0}} {
     if {![string match "2023.2*" [version -short]]} {
         error "Use Vivado 2023.2 for this hardware/PetaLinux handoff"
     }
-    if {![file isfile $project_file]} {error "Project not found: $project_file"}
-    open_project $project_file
+    if {!$already_open} {
+        if {![file isfile $project_file]} {error "Project not found: $project_file"}
+        open_project $project_file
+    }
     if {[string tolower [get_property PART [current_project]]] ne "xcve2302-sfva784-1lp-e-s"} {
         error "This is not the VD100 XCVE2302 project"
     }
     set run [get_runs impl_1]
     if {[get_property NEEDS_REFRESH $run]} {error "Implementation is stale; rebuild before export"}
-    if {![string match "*Complete*" [get_property STATUS $run]]} {
+    if {![string match "write_device_image Complete*" [get_property STATUS $run]]} {
         error "Implementation is not complete: [get_property STATUS $run]"
     }
     set run_dir [get_property DIRECTORY $run]
-    if {[llength [glob -nocomplain -directory $run_dir *.pdi]] == 0} {
-        error "Generate Device Image first: impl_1 has no PDI"
+    set pdis [glob -nocomplain -directory $run_dir *.pdi]
+    if {[llength $pdis] != 1 || [file size [lindex $pdis 0]] == 0} {
+        error "Expected exactly one non-empty Device Image in impl_1: $pdis"
     }
     set bd [get_files -quiet */vd100_platform.bd]
     if {[llength $bd] != 1} {error "Expected the Cortix vd100_platform BD"}
@@ -61,16 +64,22 @@ proc vd100_export_xsa {project_file output_file} {
     if {[file exists $output_file]} {error "Refusing to overwrite existing XSA: $output_file"}
     set probes_file [file rootname $output_file].ltx
     if {[file exists $probes_file]} {error "Refusing to overwrite existing LTX: $probes_file"}
+    set image_file [file rootname $output_file].pdi
+    if {[file exists $image_file]} {error "Refusing to overwrite existing PDI: $image_file"}
     # Probes and PDI must come from the same routed implementation.
     write_debug_probes $probes_file
     if {![file isfile $probes_file] || [file size $probes_file] == 0} {
         error "No debug probes exported; inspect the opt_design AXI Debug Hub insertion"
     }
     write_hw_platform -fixed -include_bit $output_file
+    if {![file isfile $output_file] || [file size $output_file] == 0} {
+        error "XSA export produced no hardware archive"
+    }
+    file copy [lindex $pdis 0] $image_file
     puts "INFO: matching ILA probes exported: $probes_file"
     puts "INFO: XSA exported: $output_file"
     puts "INFO: Review unconstrained-path/CDC reports; SD boot is a separate hardware test."
-    close_project
+    if {!$already_open} {close_project}
 }
 
 # When sourced by build_device_image.tcl only define the procedure.

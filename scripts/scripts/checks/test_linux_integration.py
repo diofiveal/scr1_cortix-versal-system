@@ -10,6 +10,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 import tempfile
 import tkinter
@@ -33,6 +34,9 @@ def load(name, path):
 
 PREPARE = load("prepare", "scripts/scripts/linux/prepare_petalinux.py")
 HANDOFF = load("handoff", "scripts/scripts/linux/handoff.py")
+VM_BUILD = load("vm_build", "scripts/scripts/linux/vm_build.py")
+sys.path.insert(0, str(ROOT / "scripts/scripts/linux"))
+DEPLOY_VM = load("deploy_vm", "scripts/scripts/linux/deploy_vm.py")
 
 
 def mock_bd():
@@ -191,7 +195,7 @@ class IntegrationTests(unittest.TestCase):
             self.assertIn((source, f"axis_ila_scr1/SLOT_{i}_AXI"), interfaces)
         self.assertEqual(prop("axis_ila_scr1", "CONFIG.C_MON_TYPE"), "Mixed")
         self.assertEqual(int(prop("axis_ila_scr1", "CONFIG.C_NUM_MONITOR_SLOTS")), 7)
-        self.assertEqual(int(prop("axis_ila_scr1", "CONFIG.C_DATA_DEPTH")), 1024)
+        self.assertEqual(int(prop("axis_ila_scr1", "CONFIG.C_DATA_DEPTH")), 4096)
         probes = ("pll_pl_scr1/locked", "versal_cips_0/pl0_resetn", "proc_sys_reset_0/interconnect_aresetn",
                   "proc_sys_reset_0/peripheral_aresetn", "axi_gpio_0/gpio_io_o", "debug_scr1_resetn_i",
                   "debug_lifecycle_i", "debug_axi_fault_i", "debug_outstanding_i")
@@ -349,6 +353,7 @@ class IntegrationTests(unittest.TestCase):
             path = Path(directory) / "test.xsa"
             for name, markers, accepted in (
                 ("vd100_scr1_top.pdi", "pll_pl_scr1 versal_cips_0 axi_noc_0", True),
+                ("renamed_device_image.pdi", "pll_pl_scr1 versal_cips_0 axi_noc_0", True),
                 ("design_1_wrapper.pdi", "versal_cips_0 axi_noc_0", False),
                 (None, "pll_pl_scr1 versal_cips_0 axi_noc_0", False),
             ):
@@ -366,7 +371,7 @@ class IntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
             (path / "project.xpr").touch()
-            (path / "test.pdi").touch()
+            (path / "test.pdi").write_text("mock PDI")
             for slack, stale in ((-0.1, 0), (0.1, 1), (0.1, 0)):
                 tcl = tkinter.Tcl()
                 tcl.setvar("run_dir", str(path))
@@ -404,7 +409,10 @@ class IntegrationTests(unittest.TestCase):
                     proc write_debug_probes {file} {
                         set fh [open $file w]; puts $fh "mock LTX, not hardware"; close $fh
                     }
-                    proc write_hw_platform {args} {set ::exported 1}
+                    proc write_hw_platform {args} {
+                        set ::exported 1
+                        set fh [open [lindex $args end] w]; puts $fh "mock XSA"; close $fh
+                    }
                     proc close_project {} {}
                 ''')
                 tcl.call("source", str(ROOT / "scripts/scripts/vivado/export_xsa.tcl"))
@@ -415,6 +423,176 @@ class IntegrationTests(unittest.TestCase):
                 else:
                     tcl.call("vd100_export_xsa", str(path / "project.xpr"), str(path / "output.xsa"))
                     self.assertEqual(int(tcl.getvar("exported")), 1)
+
+    def test_one_command_build_exports_without_reopening_and_retains_old_bundle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            old = root / "build/hardware"
+            old.mkdir(parents=True)
+            (old / "old.xsa").write_text("previous successful build")
+            tcl = tkinter.Tcl()
+            tcl.setvar("workspace", str(root))
+            tcl.eval(r'''
+                set events {}
+                set statuses [dict create synth_1 {Not started} impl_1 {Not started}]
+                rename source real_source
+                proc source {args} {
+                    set path [lindex $args end]
+                    switch -- [file tail $path] {
+                        project_info.tcl {
+                            real_source $path
+                            set ::vd100::root $::workspace
+                            set ::vd100::build_root [file join $::workspace build vivado-debug]
+                            set ::vd100::project_dir [file join $::vd100::build_root vd100_scr1]
+                        }
+                        helpers.tcl - add_sources.tcl - build_bd.tcl {}
+                        default {real_source {*}$args}
+                    }
+                }
+                proc version {args} {return 2023.2}
+                proc vd100_add_sources {} {}
+                proc vd100_build_bd {} {lappend ::events bd}
+                proc vd100_require_one {object label} {return $object}
+                proc create_project {name directory args} {
+                    set f [open [file join $directory $name.xpr] w]; puts $f project; close $f
+                }
+                proc open_project {args} {error "Unexpected project reopen"}
+                proc close_project {} {error "Unexpected project close"}
+                proc current_project {} {return project}
+                proc set_property {args} {}
+                proc get_files {args} {return vd100_platform.bd}
+                proc get_filesets {args} {return sources_1}
+                proc generate_target {args} {}
+                proc make_wrapper {args} {return wrapper.v}
+                proc update_compile_order {args} {}
+                proc reset_run {args} {}
+                proc launch_runs {name args} {
+                    lappend ::events [linsert $args 0 $name]
+                    if {$name eq "synth_1"} {
+                        dict set ::statuses $name {synth_design Complete!}
+                    } elseif {[lsearch $args write_device_image] >= 0} {
+                        dict set ::statuses $name {write_device_image Complete!}
+                        set f [open [file join $::workspace device.pdi] w]; puts $f pdi; close $f
+                    } else {dict set ::statuses $name {route_design Complete!}}
+                }
+                proc wait_on_run {name} {lappend ::events [list wait $name]}
+                proc get_runs {name} {return $name}
+                proc open_run {args} {}
+                proc close_design {} {}
+                proc get_property {key obj} {
+                    switch -- $key {
+                        STATUS {return [dict get $::statuses $obj]}
+                        PART {return xcve2302-sfva784-1LP-e-S}
+                        NEEDS_REFRESH {return 0}
+                        DIRECTORY {return $::workspace}
+                        SLACK {return 0.1}
+                    }
+                    error "Unexpected property $key"
+                }
+                proc report {args} {
+                    set f [open [lindex $args end] w]; puts $f report; close $f
+                }
+                foreach command {report_utilization report_timing_summary report_timing report_cdc report_drc} {
+                    interp alias {} $command {} report
+                }
+                proc get_timing_paths {args} {return path}
+                proc get_drc_violations {args} {return {}}
+                proc open_bd_design {args} {}
+                proc get_bd_cells {args} {return [lindex $args end]}
+                proc get_bd_intf_pins {args} {return [lindex $args end]}
+                proc get_bd_intf_nets {args} {return net}
+                proc validate_bd_design {} {}
+                proc write_debug_probes {path} {report -file $path}
+                proc write_hw_platform {args} {report {*}$args}
+            ''')
+            script = ROOT / "scripts/scripts/vivado/create_project.tcl"
+            tcl.call("source", str(script))
+            for name in ("cortix_scr1.xsa", "cortix_scr1.pdi", "cortix_scr1.ltx"):
+                self.assertGreater((old / name).stat().st_size, 0)
+            self.assertTrue((old / "build-reports/routed_timing_summary.rpt").is_file())
+            previous = list((root / "build").glob("hardware.previous-*"))
+            self.assertEqual((previous[0] / "old.xsa").read_text(), "previous successful build")
+            events = str(tcl.getvar("events"))
+            self.assertLess(events.index("route_design"), events.index("write_device_image"))
+            tcl.call("source", str(script))
+            self.assertEqual(len(list((root / "build").glob("vivado-debug*"))), 2)
+
+    def test_vm_bundle_detects_changed_or_missing_members_before_extract(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "bundle.zip"
+            files = {name: b"mock" for name in (
+                "scripts/scripts/linux/prepare_petalinux.py", "scripts/scripts/linux/build_sd.sh",
+                "scripts/scripts/linux/handoff.py", "scripts/scripts/checks/test_linux_integration.py",
+                "linux/config.fragment", "linux/rootfs.fragment", "SOURCE_REVISION",
+                "build/hardware/cortix_scr1.xsa", "build/hardware/cortix_scr1.pdi", "build/hardware/cortix_scr1.ltx")}
+            manifest = {"format": 1, "sha256": {n: hashlib.sha256(d).hexdigest() for n, d in files.items()}}
+            for changed in (None, "build/hardware/cortix_scr1.xsa", "missing"):
+                with zipfile.ZipFile(path, "w") as archive:
+                    archive.writestr("vm-bundle.json", json.dumps(manifest))
+                    for name, data in files.items():
+                        if changed == "missing" and name.endswith(".ltx"):
+                            continue
+                        archive.writestr(name, b"changed" if name == changed else data)
+                if changed is None:
+                    self.assertEqual(VM_BUILD.verify_bundle(path), manifest)
+                else:
+                    with self.assertRaises(ValueError):
+                        VM_BUILD.verify_bundle(path)
+
+    def test_deploy_bundle_checks_pdi_identity_and_returns_verified_sd_archive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            hardware = root / "hardware"
+            hardware.mkdir()
+            (hardware / "cortix_scr1.pdi").write_bytes(b"matching PDI")
+            (hardware / "cortix_scr1.ltx").write_bytes(b"mock probes")
+            with zipfile.ZipFile(hardware / "cortix_scr1.xsa", "w") as archive:
+                archive.writestr("renamed.pdi", b"matching PDI")
+                archive.writestr("design.hwh", "pll_pl_scr1 versal_cips_0 axi_noc_0")
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            (root / "source.txt").write_text("tracked source")
+            subprocess.run(["git", "add", "source.txt"], cwd=root, check=True)
+            subprocess.run(["git", "-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+                            "commit", "-qm", "fixture"], cwd=root, check=True)
+            bundle = root / "bundle.zip"
+            manifest = DEPLOY_VM.create_bundle(root, hardware, bundle)
+            self.assertIn("source.txt", manifest["sha256"])
+            with zipfile.ZipFile(bundle) as archive:
+                self.assertNotIn(".git/config", archive.namelist())
+            (hardware / "cortix_scr1.pdi").write_bytes(b"wrong build")
+            with self.assertRaisesRegex(ValueError, "differs"):
+                DEPLOY_VM.create_bundle(root, hardware, root / "bad.zip")
+            sd = root / "sd.zip"
+            hashes = {name: hashlib.sha256(name.encode()).hexdigest() for name in VM_BUILD.SD_FILES}
+            for corrupt in (False, True):
+                with zipfile.ZipFile(sd, "w") as archive:
+                    archive.writestr("handoff.json", json.dumps({"image_sha256": hashes}))
+                    for name in VM_BUILD.SD_FILES:
+                        archive.writestr(name, b"corrupt" if corrupt else name.encode())
+                if corrupt:
+                    with self.assertRaisesRegex(ValueError, "SHA256"):
+                        VM_BUILD.verify_sd_archive(sd)
+                else:
+                    VM_BUILD.verify_sd_archive(sd)
+
+    def test_ila_helper_arms_selected_read_slot_without_mmio_or_programming(self):
+        tcl = tkinter.Tcl()
+        tcl.eval(r'''
+            set ::scr1_debug_ila ila
+            set properties [dict create]
+            proc reset_hw_ila {args} {}
+            proc get_hw_probes {args} {return {SLOT_0_AXI_arvalid SLOT_3_AXI_arvalid SLOT_4_AXI_arvalid}}
+            proc get_property {key obj} {return $obj}
+            proc set_property {key value obj} {dict set ::properties $obj $key $value}
+            proc run_hw_ila {args} {set ::armed $args}
+        ''')
+        tcl.call("source", str(ROOT / "scripts/scripts/debug/scr1_ila.tcl"))
+        tcl.call("scr1_ila_arm_read", 3)
+        self.assertEqual(tcl.call("dict", "get", tcl.getvar("properties"), "SLOT_3_AXI_arvalid", "TRIGGER_COMPARE_VALUE"), "eq1'b1")
+        self.assertEqual(tcl.getvar("armed"), ("ila",))
+        for invalid in (-1, 7, "unknown"):
+            with self.assertRaises(tkinter.TclError):
+                tcl.call("scr1_ila_arm_read", invalid)
 
     def test_handoff_rejects_changed_imported_xsa(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -18,8 +18,8 @@ proc vd100_create_debug {} {
     set props [list CONFIG.C_MON_TYPE {Mixed} \
         CONFIG.C_NUM_MONITOR_SLOTS {7} CONFIG.C_NUM_OF_PROBES {9} \
         CONFIG.C_DATA_DEPTH $::vd100::ila_depth CONFIG.C_INPUT_PIPE_STAGES {2}]
-    # Capture all five AXI channels at each observation point. Widths are
-    # and protocol are propagated from the attached interfaces, including the 12/16-bit Lite
+    # Capture all five AXI channels at each observation point. Widths and
+    # protocol are propagated from the attached interfaces, including 12/16-bit Lite
     # addresses on the RTL boundary. No extra functional AXI endpoint is added.
     set slots {
         smartconnect_0/S00_AXI AXI4

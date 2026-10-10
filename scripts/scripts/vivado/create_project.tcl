@@ -1,6 +1,6 @@
 # =============================================================================
 # One-command Vivado 2023.2 project creation, BD generation, synthesis and
-# routed implementation. Device Image/XSA remain an explicit qualified step.
+# routed implementation, reports, Device Image and matching XSA/LTX.
 # Run from any directory:
 #   vivado -mode batch -source scripts/scripts/vivado/create_project.tcl
 # =============================================================================
@@ -20,7 +20,12 @@ file mkdir $::vd100::build_root
 file mkdir $::vd100::project_dir
 
 if {[file exists [file join $::vd100::project_dir ${::vd100::project_name}.xpr]]} {
-    error "Project already exists; open it or choose a new build_root in project_info.tcl. Refusing to overwrite a working build."
+    # Rebuild the BD from versioned Tcl rather than silently reusing old IP.
+    # Keep previous runs for comparison; never delete a successful build.
+    append ::vd100::build_root -[clock format [clock seconds] -format %Y%m%d-%H%M%S]-[pid]-[clock clicks]
+    set ::vd100::project_dir [file join $::vd100::build_root $::vd100::project_name]
+    file mkdir $::vd100::project_dir
+    puts "INFO: Previous project retained; new build: $::vd100::project_dir"
 }
 create_project $::vd100::project_name $::vd100::project_dir \
     -part $::vd100::part
@@ -117,5 +122,31 @@ if {$::vd100::run_synthesis} {
             error "Implementation has [llength $drc_errors] Error-severity DRC violation(s)"
         }
         puts "Implementation reports: $report_dir"
+
+        # Continue the SAME run/session after routed timing and DRC checks.
+        close_design
+        launch_runs impl_1 -to_step write_device_image -jobs $::vd100::jobs
+        wait_on_run impl_1
+        set image_status [get_property STATUS [get_runs impl_1]]
+        if {![string match "write_device_image Complete*" $image_status]} {
+            error "Device Image generation failed: $image_status"
+        }
+
+        set ::vd100_export_library_only 1
+        source [file join $script_dir export_xsa.tcl]
+        unset ::vd100_export_library_only
+        # Publish a complete matched bundle only after export succeeds.
+        set stamp [clock format [clock seconds] -format %Y%m%d-%H%M%S]-[pid]-[clock clicks]
+        set hardware_dir [file join $::vd100::root build hardware]
+        set pending_dir ${hardware_dir}.pending-$stamp
+        file mkdir $pending_dir
+        vd100_export_xsa "" [file join $pending_dir cortix_scr1.xsa] 1
+        file copy -force $report_dir [file join $pending_dir build-reports]
+        if {[file exists $hardware_dir]} {
+            file rename $hardware_dir ${hardware_dir}.previous-$stamp
+        }
+        file rename $pending_dir $hardware_dir
+        puts "INFO: COMPLETE: $hardware_dir/cortix_scr1.pdi, cortix_scr1.xsa, cortix_scr1.ltx"
+        puts "INFO: Project remains open for Hardware Manager/debug."
     }
 }

@@ -108,7 +108,7 @@ CIPS debug mode — JTAG. `create_hw_axi_txn`/`run_hw_axi` здесь не пр�
 снятого reset у SmartConnect/targets, но не Linux и не запущенного A72.
 
 В Hardware Manager загрузи **новый** PDI и его LTX из того же routed run.
-`axis_ila_scr1` — Versal AXIS ILA 1.2, Mixed, depth 1024, input pipeline 2.
+`axis_ila_scr1` — Versal AXIS ILA 1.2, Mixed, depth 4096, input pipeline 2.
 Во время `opt_design` Vivado автоматически добавляет AXI Debug Hub + debug NoC
 и соединяет их с CIPS (обычный non-DFX flow); проверь это в implementation log
 и реализованной схеме. Отдельное MMIO-окно debug hub скрипт не создаёт вручную.
@@ -173,6 +173,39 @@ Fault probe отражает AXI monitor; полный lifecycle FAULT_CODE чи
 
 Во всех slots доступны AW/W/B/AR/R. Для зависшего чтения запусти capture
 достаточно рано: AR handshake может уже завершиться, пока Linux ждёт RVALID.
+
+### Команды ILA для первого захвата
+
+В Vivado Hardware Manager подключись к hw_server/target, выбери VD100 device
+и загрузи `build/hardware/cortix_scr1.pdi` либо запусти SD с `BOOT.BIN` от того
+же XSA. Скрипт захвата не прошивает плату и не сбрасывает работающий Linux.
+В Tcl Console из корня репозитория:
+
+```tcl
+source scripts/scripts/debug/scr1_ila.tcl
+scr1_ila_attach
+scr1_ila_now
+scr1_ila_save build/captures/resets
+scr1_ila_arm_read 3
+```
+
+Теперь сделай один GPIO read в XSDB (`mrd 0x80020000`, selected DPC target)
+или Linux (`busybox devmem 0xA4020000 32`), затем в Vivado:
+
+```tcl
+scr1_ila_save build/captures/gpio-read
+```
+
+Получишь `.ila` для Vivado и `.csv` для анализа. Slot 3 наблюдает GPIO,
+slot 4 — вход DPC, slot 0 — вход A72; например `scr1_ila_arm_read 4`.
+Ожидание захвата ограничено timeout; при отсутствии trigger/clock проверь
+статус ILA в GUI. Триггер ставится по ARVALID любого адреса выбранного slot;
+для фильтрации конкретного адреса добавь ARADDR comparator в GUI.
+Для нового захвата указывай новый prefix. Буфер 4096 при 90 МГц покрывает
+примерно 45.5 мкс; pretrigger в режиме read — 1024 samples. Длительное
+зависание анализируется по отсутствию RVALID после принятого AR, а не по
+записи нескольких секунд. Увеличение глубины требует новой implementation
+и проверки расхода BRAM/timing.
 Для ошибочного SCR1 доступа смотри slot 5/6 response DECERR и fault/outstanding;
 инструкции из normal Linux DDR не должны уходить в NoC.
 
@@ -180,40 +213,143 @@ Fault probe отражает AXI monitor; полный lifecycle FAULT_CODE чи
 
 Сначала сохрани предыдущий успешный проект и его PDI. Новый build по умолчанию
 создаётся в `build/vivado-debug`, отдельно от старого `build/vivado`.
-Повторное создание поверх существующего XPR запрещено; открывай существующий
-проект либо выбирай новый `build_root` в `project_info.tcl`.
+При наличии старого XPR новый проект создаётся автоматически в каталоге
+`build/vivado-debug-<timestamp>-<id>`; предыдущие результаты сохраняются.
 
 В каталоге репозитория:
 
 ```sh
 vivado -mode batch -source scripts/scripts/vivado/create_project.tcl
-vivado -mode batch -source scripts/scripts/vivado/build_device_image.tcl -tclargs build/vivado-debug/vd100_scr1/vd100_scr1.xpr build/hardware/cortix_scr1.xsa
 ```
 
-Первый скрипт создаёт BD/wrapper, запускает synthesis и implementation до
+В GUI Vivado 2023.2 без открытого проекта, из каталога репозитория:
+
+```tcl
+source scripts/scripts/vivado/create_project.tcl
+```
+
+Один скрипт создаёт BD/wrapper, запускает synthesis и implementation до
 `route_design`, формирует post-route timing/CDC/DRC/utilization reports и
 останавливается с ошибкой при отрицательном setup/hold slack или Error DRC.
-Второй продолжает успешный routed run до **Generate Device Image**
+Далее в этой же сессии он продолжает успешный run до **Generate Device Image**
 (`write_device_image`, Versal PDI), повторно квалифицирует результат и
-экспортирует XSA и соответствующий `build/hardware/cortix_scr1.ltx`:
+экспортирует XSA командой:
 
 ```tcl
 write_hw_platform -fixed -include_bit build/hardware/cortix_scr1.xsa
 ```
 
-Если PDI уже успешно получен в **новом Linux-проекте**, достаточно:
+Результаты одного run:
+
+| Путь | Назначение |
+|---|---|
+| `build/hardware/cortix_scr1.pdi` | Device Image для программирования Versal |
+| `build/hardware/cortix_scr1.xsa` | аппаратная платформа с тем же PDI для PetaLinux |
+| `build/hardware/cortix_scr1.ltx` | probes реализованного AXIS ILA |
+| `build/hardware/build-reports/` | synthesis и route reports |
+| `build/hardware/reports/` | итоговые timing/CDC/DRC reports экспорта |
+
+Новый комплект сначала экспортируется в `hardware.pending-*`, затем полностью
+заменяет `build/hardware`; предыдущий комплект переносится в
+`hardware.previous-*`. Если сборка/экспорт не завершились, предыдущий комплект
+остаётся в `build/hardware`: всегда проверяй сообщение `INFO: COMPLETE`, не
+переноси старые результаты после ошибки. В GUI проект остаётся открытым.
+Закрывать/перезапускать Vivado и запускать второй Tcl не требуется.
+Для следующей полной сборки в той же GUI сначала закрой текущий проект
+командой `close_project` (после сохранения нужных ручных изменений), затем
+снова `source`; версия BD создаётся из Tcl репозитория.
+
+Старые `build_device_image.tcl`/`export_xsa.tcl` оставлены только для ручного
+восстановления уже созданного проекта. Если PDI уже получен, отдельный экспорт:
 
 ```sh
 vivado -mode batch -source scripts/scripts/vivado/export_xsa.tcl -tclargs build/vivado-debug/vd100_scr1/vd100_scr1.xpr build/hardware/cortix_scr1.xsa
 ```
 
 Экспорт отказывается от stale implementation, отсутствующего PDI/PLL/native
-DDR routes, отрицательных setup/hold slack и Error DRC. Повторный экспорт не
-перезаписывает существующий XSA: укажи новое имя. Дополнительно проверь отчёты
+DDR routes, отрицательных setup/hold slack и Error DRC. Отдельный ручной экспорт
+не перезаписывает существующий XSA/LTX/PDI: укажи новое имя. Дополнительно проверь отчёты
 в `build/hardware/reports`: отсутствие необъяснённых unconstrained paths,
 unsafe CDC, ошибки DDR pins и всех критических предупреждений.
 
 ## 2. PetaLinux 2023.2 из Cortix-XSA
+
+### Автоматический перенос и сборка в VM
+
+Сначала запусти Ubuntu VM и установи PetaLinux 2023.2 с зависимостями из
+официального release guide. Для SSH нужен `openssh-server` в VM и рабочий
+доступ по ключу/ssh-agent; `deploy_vm.py` использует обычную проверку host key,
+пароли в скриптах не сохраняются. До запуска проверь `ssh user@VM-IP`.
+Путь к установленному settings можно найти внутри VM:
+
+```sh
+find "$HOME" /opt /tools -type f -name settings.sh 2>/dev/null
+```
+
+Сборка выполняется обычным пользователем на собственном ext4 диске VM,
+а не в `/media/sf_exchange`. Проверяются минимум 8 GiB RAM (с допуском на
+память ядра), 100 GiB свободного диска, RAM available/swap, число CPU,
+`/bin/sh=bash`, наличие инструментов, версия PetaLinux и SHA256 каждого файла.
+CPU/swap/available RAM выводятся для диагностики; нехватка свободной RAM при
+нагруженной VM всё ещё может привести к OOM. Скрипты не устанавливают пакеты
+и не меняют VM resources. На Ubuntu `/bin/sh` при необходимости настраивается
+через `sudo dpkg-reconfigure dash`. Для offline build caches сначала настрой
+пути своего PetaLinux окружения. Проверки не гарантируют доступность downloads
+и не заменяют полную проверку host packages самим PetaLinux.
+
+На основном Linux, после успешного `create_project.tcl`:
+
+```sh
+python3 scripts/scripts/linux/deploy_vm.py \
+  --host user@VM-IP \
+  --settings /home/user/petalinux/2023.2/settings.sh \
+  --vm-workdir /home/user/cortix-builds
+```
+
+Замени `user@VM-IP` и пути на свои. Для NAT port forwarding добавь `--port 2222`
+и используй `user@127.0.0.1`. Скрипт:
+
+1. Запускает offline regression и проверяет наличие XSA/PDI/LTX; сравнивает
+   standalone PDI с PDI внутри XSA.
+2. Упаковывает versioned файлы Git (без `.git`, caches и старых build directories),
+   hardware и manifest всех SHA256 в новый `build/vm/cortix-vm-*/bundle.zip`.
+3. Переносит bundle и standalone `vm_build.py` через SCP в новый каталог VM.
+4. Проверяет VM, inventory/контрольные суммы и распаковывает repository на её
+   native disk. Запускает regression, `prepare_petalinux.py`, `handoff.py verify`,
+   затем `build_sd.sh` (build, boot packaging, staging).
+5. Собирает `sd-output.zip`, возвращает его на основной Linux в тот же
+   `build/vm/cortix-vm-*/` и повторно проверяет SHA256 четырёх SD images.
+
+`--configure-only` выполняет перенос/проверки/конфигурацию без Linux build.
+Последующие шаги можно выполнить в VM с `--resume`, как ниже.
+
+Для VirtualBox shared folder (SSH не нужен), на основном Linux:
+
+```sh
+python3 scripts/scripts/linux/deploy_vm.py --shared-dir /host/path/to/exchange
+```
+
+Скрипт создаст `cortix-vm-<id>/` и напечатает VM command. В VM используй
+**фактический** mount общей папки и выведенный id:
+
+```sh
+python3 /media/sf_exchange/cortix-vm-<id>/vm_build.py \
+  /media/sf_exchange/cortix-vm-<id>/bundle.zip \
+  --settings /home/user/petalinux/2023.2/settings.sh \
+  --workdir "$HOME/cortix-builds/cortix-vm-<id>"
+```
+
+Результат находится в `<workdir>/sd-output.zip`; скопируй его обратно через
+общую папку. Лог: `<workdir>/vm-build.log`, подробный PetaLinux log также
+находится в `<workdir>/petalinux-cortix/build/`. После прерванного Linux build
+повтори ту же VM command с `--resume`. Исходники и XSA должны быть неизменными;
+скрипт не удаляет BitBake locks и процессы. Если configuration оборвалась до
+создания `cortix-handoff.json`, используй новый workdir. После успешного staging
+новая сборка также использует новый workdir, чтобы сохранить предыдущие образы.
+Offline тесты требуют `python3-tk`, `gcc` и `binutils`; optional SV test требует
+`pyslang==12.0.0`. Skipped SV test явно отмечается и не означает hardware PASS.
+
+### Ручной запуск внутри VM
 
 Используй поддерживаемый PetaLinux Linux-host, **обычного пользователя** и
 одинаковый релиз 2023.2 для Vivado/PetaLinux. Пример из каталога репозитория:
@@ -230,6 +366,7 @@ Cortix-XSA, применяет настройки SD/ext4 и наш минима
 `system.xsa`, PDI, `BOOT.bin`, `image.ub` или host-specific offline paths.
 Проверяются HWH-маркеры Cortix и наличие его PDI; это проверка идентичности,
 не эквивалент hardware validation. SHA256 XSA сохраняется в handoff manifest.
+Имя PDI произвольное: проверка на substring `vd100_scr1_top` удалена.
 
 Полная команда packaging для Versal:
 

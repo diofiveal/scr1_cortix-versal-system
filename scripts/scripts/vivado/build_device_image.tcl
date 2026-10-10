@@ -28,5 +28,11 @@ if {![string match "write_device_image Complete*" [get_property STATUS $impl]]} 
 if {![string match "write_device_image Complete*" [get_property STATUS $impl]]} {
     error "Device Image generation failed: [get_property STATUS $impl]"
 }
-close_project
+set output_file [file normalize [file join [file dirname $project_file] .. .. hardware cortix_scr1.xsa]]
+if {[llength $argv] == 2} {set output_file [file normalize [lindex $argv 1]]}
+file mkdir [file dirname $output_file]
+set ::vd100_export_library_only 1
 source [file join [file dirname [info script]] export_xsa.tcl]
+unset ::vd100_export_library_only
+vd100_export_xsa "" $output_file 1
+# Legacy entry point only; create_project.tcl now performs this entire flow.

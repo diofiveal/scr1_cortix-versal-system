@@ -45,8 +45,6 @@ def inspect_xsa(path):
         for marker in ("pll_pl_scr1", "versal_cips_0", "axi_noc_0"):
             if marker not in hw:
                 raise ValueError(f"Not the Cortix Linux hardware: missing {marker} in HWH")
-        if not any("vd100_scr1_top" in n for n in pdis):
-            raise ValueError("Expected vd100_scr1_top PDI, not the ALINX demo PDI")
         return pdis
 
 
@@ -93,10 +91,13 @@ def main():
     run(["petalinux-config", "-c", "rootfs", "--silentconfig"], project)
     # Record the handoff identity; build_sd checks it before/after a build.
     git = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, capture_output=True)
+    revision_file = ROOT / "SOURCE_REVISION"
+    revision = (revision_file.read_text().strip() if revision_file.is_file()
+                else git.stdout.strip() if git.returncode == 0 else None)
     manifest = {
         "xsa_sha256": hashlib.sha256(imported_xsa.read_bytes()).hexdigest(),
         "source_xsa": str(xsa), "imported_xsa": "cortix-hardware/cortix_scr1.xsa",
-        "pdi_members": pdis, "repository_commit": git.stdout.strip() if git.returncode == 0 else None,
+        "pdi_members": pdis, "repository_commit": revision,
         "petalinux_version": "2023.2", "status": "configured; not built or boot-tested",
     }
     (project / "cortix-handoff.json").write_text(json.dumps(manifest, indent=2) + "\n")
