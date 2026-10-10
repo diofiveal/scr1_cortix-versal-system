@@ -195,7 +195,7 @@ class IntegrationTests(unittest.TestCase):
             self.assertIn((source, f"axis_ila_scr1/SLOT_{i}_AXI"), interfaces)
         self.assertEqual(prop("axis_ila_scr1", "CONFIG.C_MON_TYPE"), "Mixed")
         self.assertEqual(int(prop("axis_ila_scr1", "CONFIG.C_NUM_MONITOR_SLOTS")), 7)
-        self.assertEqual(int(prop("axis_ila_scr1", "CONFIG.C_DATA_DEPTH")), 4096)
+        self.assertEqual(int(prop("axis_ila_scr1", "CONFIG.C_DATA_DEPTH")), 1024)
         probes = ("pll_pl_scr1/locked", "versal_cips_0/pl0_resetn", "proc_sys_reset_0/interconnect_aresetn",
                   "proc_sys_reset_0/peripheral_aresetn", "axi_gpio_0/gpio_io_o", "debug_scr1_resetn_i",
                   "debug_lifecycle_i", "debug_axi_fault_i", "debug_outstanding_i")
@@ -510,6 +510,8 @@ class IntegrationTests(unittest.TestCase):
             for name in ("cortix_scr1.xsa", "cortix_scr1.pdi", "cortix_scr1.ltx"):
                 self.assertGreater((old / name).stat().st_size, 0)
             self.assertTrue((old / "build-reports/routed_timing_summary.rpt").is_file())
+            self.assertTrue((old / "build-reports/synth_utilization_hierarchical.rpt").is_file())
+            self.assertTrue((old / "build-reports/routed_utilization_hierarchical.rpt").is_file())
             previous = list((root / "build").glob("hardware.previous-*"))
             self.assertEqual((previous[0] / "old.xsa").read_text(), "previous successful build")
             events = str(tcl.getvar("events"))
@@ -582,14 +584,27 @@ class IntegrationTests(unittest.TestCase):
             set properties [dict create]
             proc reset_hw_ila {args} {}
             proc get_hw_probes {args} {return {SLOT_0_AXI_arvalid SLOT_3_AXI_arvalid SLOT_4_AXI_arvalid}}
-            proc get_property {key obj} {return $obj}
+            proc get_property {key obj} {
+                if {$key eq "CONTROL.DATA_DEPTH"} {return $::capture_depth}
+                return $obj
+            }
             proc set_property {key value obj} {dict set ::properties $obj $key $value}
             proc run_hw_ila {args} {set ::armed $args}
         ''')
         tcl.call("source", str(ROOT / "scripts/scripts/debug/scr1_ila.tcl"))
+        tcl.setvar("capture_depth", 1024)
         tcl.call("scr1_ila_arm_read", 3)
         self.assertEqual(tcl.call("dict", "get", tcl.getvar("properties"), "SLOT_3_AXI_arvalid", "TRIGGER_COMPARE_VALUE"), "eq1'b1")
         self.assertEqual(tcl.getvar("armed"), ("ila",))
+        for depth in (1024, 4096):
+            tcl.setvar("capture_depth", depth)
+            tcl.call("scr1_ila_arm_read", 3)
+            position = int(tcl.call("dict", "get", tcl.getvar("properties"), "ila", "CONTROL.TRIGGER_POSITION"))
+            self.assertEqual(position, depth // 4)
+            self.assertLess(position, depth)
+        tcl.setvar("capture_depth", "invalid")
+        with self.assertRaisesRegex(tkinter.TclError, "Invalid ILA capture depth"):
+            tcl.call("scr1_ila_arm_read", 3)
         for invalid in (-1, 7, "unknown"):
             with self.assertRaises(tkinter.TclError):
                 tcl.call("scr1_ila_arm_read", invalid)

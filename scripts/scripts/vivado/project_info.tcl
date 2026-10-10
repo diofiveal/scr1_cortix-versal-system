@@ -56,7 +56,11 @@ namespace eval vd100 {
     variable linux_ddr_range  0x80000000
     variable scr1_ddr_base    0x7F000000
     variable scr1_ddr_range   0x01000000
-    variable ila_depth       4096
+    # Seven full AXI observation points include wide FPD/LPD data buses.
+    # 4096 samples overflowed VE2302 BRAM in the user's implementation
+    # (226 RAMB36/FIFO requested, 155 sites available). Keep all slots,
+    # but use the 1024-sample capture buffer for this board.
+    variable ila_depth       1024
 
     # Default one-command flow includes synthesis, routing, timing/DRC checks,
     # Device Image and a matched PDI/XSA/LTX bundle in build/hardware.

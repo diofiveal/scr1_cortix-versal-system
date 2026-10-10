@@ -45,7 +45,13 @@ proc scr1_ila_arm_read {slot} {
         error "Cannot identify SLOT_${slot}_AXI ARVALID in this LTX; inspect get_hw_probes -of_objects $ila"
     }
     set_property CONTROL.TRIGGER_MODE BASIC_ONLY $ila
-    set_property CONTROL.TRIGGER_POSITION 1024 $ila
+    # reset_hw_ila restores CONTROL.DATA_DEPTH to this core's actual maximum.
+    # Derive pretrigger from the loaded core, not a hard-coded 4096-depth build.
+    set depth [get_property CONTROL.DATA_DEPTH $ila]
+    if {![string is integer -strict $depth] || $depth < 1} {
+        error "Invalid ILA capture depth: $depth"
+    }
+    set_property CONTROL.TRIGGER_POSITION [expr {$depth / 4}] $ila
     set_property TRIGGER_COMPARE_VALUE "eq1'b1" [lindex $matches 0]
     run_hw_ila $ila
     puts "INFO: Armed on slot $slot ARVALID. Now perform ONE Linux/XSDB read, then scr1_ila_save."

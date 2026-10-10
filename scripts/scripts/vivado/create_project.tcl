@@ -79,6 +79,8 @@ if {$::vd100::run_synthesis} {
 
     open_run synth_1
     report_utilization -file [file join $report_dir synth_utilization.rpt]
+    report_utilization -hierarchical \
+        -file [file join $report_dir synth_utilization_hierarchical.rpt]
     report_timing_summary -file [file join $report_dir synth_timing_summary.rpt]
     report_drc -file [file join $report_dir synth_drc.rpt]
 
@@ -93,11 +95,14 @@ if {$::vd100::run_synthesis} {
         set impl_status [get_property STATUS [get_runs impl_1]]
         puts "Implementation status: $impl_status"
         if {![string match "*route_design Complete*" $impl_status]} {
-            error "Implementation did not complete route_design successfully: $impl_status"
+            set impl_log [file join [get_property DIRECTORY [get_runs impl_1]] runme.log]
+            error "Implementation did not complete route_design successfully: $impl_status. Inspect $impl_log and $report_dir/synth_utilization_hierarchical.rpt (including axis_ila_scr1 BRAM usage)."
         }
 
         open_run impl_1
         report_utilization -file [file join $report_dir routed_utilization.rpt]
+        report_utilization -hierarchical \
+            -file [file join $report_dir routed_utilization_hierarchical.rpt]
         report_timing_summary -report_unconstrained \
             -file [file join $report_dir routed_timing_summary.rpt]
         report_timing -max_paths 50 \

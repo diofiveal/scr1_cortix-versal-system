@@ -108,7 +108,15 @@ CIPS debug mode — JTAG. `create_hw_axi_txn`/`run_hw_axi` здесь не пр�
 снятого reset у SmartConnect/targets, но не Linux и не запущенного A72.
 
 В Hardware Manager загрузи **новый** PDI и его LTX из того же routed run.
-`axis_ila_scr1` — Versal AXIS ILA 1.2, Mixed, depth 4096, input pipeline 2.
+`axis_ila_scr1` — Versal AXIS ILA 1.2, Mixed, depth 1024, input pipeline 2.
+Вариант depth 4096 с семью полными AXI slots не поместился в VE2302:
+в пользовательском implementation log указаны 226 RAMB36/FIFO при доступных
+155 sites (452 против 310 в 18-Кбит эквивалентах; это не отдельный ресурс,
+их не надо складывать). Это FPGA BRAM, не RAM машины и не shared DDR.
+Глубина уменьшена до 1024 без удаления slots, каналов или reset/fault probes.
+Ресурсы каждого блока проверяй в `synth_utilization_hierarchical.rpt` и
+`routed_utilization_hierarchical.rpt`. Фактическую вместимость и timing после
+этого изменения должна подтвердить новая implementation.
 Во время `opt_design` Vivado автоматически добавляет AXI Debug Hub + debug NoC
 и соединяет их с CIPS (обычный non-DFX flow); проверь это в implementation log
 и реализованной схеме. Отдельное MMIO-окно debug hub скрипт не создаёт вручную.
@@ -201,8 +209,10 @@ slot 4 — вход DPC, slot 0 — вход A72; например `scr1_ila_arm
 Ожидание захвата ограничено timeout; при отсутствии trigger/clock проверь
 статус ILA в GUI. Триггер ставится по ARVALID любого адреса выбранного slot;
 для фильтрации конкретного адреса добавь ARADDR comparator в GUI.
-Для нового захвата указывай новый prefix. Буфер 4096 при 90 МГц покрывает
-примерно 45.5 мкс; pretrigger в режиме read — 1024 samples. Длительное
+Для нового захвата указывай новый prefix. Буфер 1024 при 90 МГц покрывает
+примерно 11.4 мкс; pretrigger в режиме read — 256 samples. Скрипт получает
+`CONTROL.DATA_DEPTH` загруженного core и выбирает четверть для pretrigger,
+так что trigger position всегда находится внутри capture buffer. Длительное
 зависание анализируется по отсутствию RVALID после принятого AR, а не по
 записи нескольких секунд. Увеличение глубины требует новой implementation
 и проверки расхода BRAM/timing.
