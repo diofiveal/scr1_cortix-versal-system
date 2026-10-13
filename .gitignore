@@ -4,3 +4,13 @@ __pycache__/
 *.jou
 *.log
 .Xil/
+
+# UVM generated output
+/verification/uvm/build/
+xsim.dir/
+*.wdb
+*.vcd
+*.fsdb
+*.ucdb
+*.vdb
+*.covdb
