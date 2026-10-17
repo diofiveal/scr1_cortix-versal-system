@@ -1,0 +1,2 @@
+-f verification/uvm/benches/unit/shared_bram_single_port_ram/shared_bram_single_port_ram.f
+verification/uvm/benches/unit/shared_bram_single_port_ram/tb/tb_sbm_driver_fixture.sv

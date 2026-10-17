@@ -1,19 +1,33 @@
 class sbm_sequencer extends uvm_sequencer #(sbm_item);
   `uvm_component_utils(sbm_sequencer)
-  function new(string name, uvm_component parent); super.new(name,parent); endfunction
+  uvm_analysis_port #(sbm_item) intent_ap;
+  longint unsigned next_intent_id;
+  function new(string name, uvm_component parent);
+    super.new(name,parent); intent_ap = new("intent_ap",this);
+  endfunction
 endclass
 
 class sbm_driver extends uvm_driver #(sbm_item);
   `uvm_component_utils(sbm_driver)
   sbm_vif_t vif;
-  function new(string name, uvm_component parent); super.new(name,parent); endfunction
+  uvm_analysis_port #(sbm_item) accept_ap, complete_ap;
+  // Fixture-only fault switches. Production configuration leaves this at zero.
+  int unsigned fault_mode;
+  bit fault_fired;
+  function new(string name, uvm_component parent);
+    super.new(name,parent);
+    accept_ap = new("accept_ap",this);
+    complete_ap = new("complete_ap",this);
+  endfunction
   function void build_phase(uvm_phase phase);
     super.build_phase(phase);
     if (!uvm_config_db#(sbm_vif_t)::get(this,"","vif",vif))
       `uvm_fatal("NO_VIF","Missing sbm_ram_if")
+    void'(uvm_config_db#(int unsigned)::get(this,"","driver_fault_mode",fault_mode));
   endfunction
   task run_phase(uvm_phase phase);
-    sbm_item tr;
+    sbm_item tr, snap, event_copy;
+    bit inject;
     drive_idle();
     forever begin
       @(negedge vif.clk);
@@ -21,51 +35,75 @@ class sbm_driver extends uvm_driver #(sbm_item);
       tr = null;
       seq_item_port.try_next_item(tr);
       if (tr == null) continue;
-      // Inputs settle before the next sampling edge. A following item can
-      // issue on the immediately following clock with no inserted idle edge.
-      case (tr.op)
+      $cast(snap,tr.clone());
+      if (snap == null) `uvm_fatal("SBM-CLONE","Driver item clone failed")
+      $cast(event_copy,snap.clone());
+      accept_ap.write(event_copy);
+      inject = !fault_fired &&
+               ((fault_mode == 1 && snap.op == SBM_READ) ||
+                (fault_mode == 2 && snap.op == SBM_WRITE && |snap.strb) ||
+                (fault_mode == 3 && snap.op inside {SBM_READ,SBM_WRITE}) ||
+                (fault_mode == 4 && snap.op == SBM_READ) ||
+                (fault_mode == 5 && snap.op == SBM_READ) ||
+                (fault_mode == 6 && snap.op == SBM_WRITE && |snap.strb));
+      if (inject) fault_fired = 1;
+      // READ/WRITE (including illegal/zero-mask probes) occupies one edge.
+      // Level-held RESET/INIT is intentionally a different contract.
+      case (snap.op)
         SBM_READ: begin
-          vif.ram_rd_en_i = 1'b1;
-          vif.ram_addr_i = tr.addr;
-          vif.ram_issue_ticket_i = tr.ticket;
+          if (!(inject && (fault_mode inside {1,4}))) vif.ram_rd_en_i = 1'b1;
+          vif.ram_addr_i = (inject && fault_mode==5) ? (snap.addr ^ 14'd1) : snap.addr;
+          vif.ram_issue_ticket_i = snap.ticket;
         end
         SBM_WRITE: begin
-          vif.ram_wr_en_i = 1'b1;
-          vif.ram_addr_i = tr.addr;
-          vif.ram_wr_data_i = tr.data;
-          vif.ram_wr_strb_i = tr.strb;
-          vif.ram_issue_ticket_i = tr.ticket;
+          if (!(inject && fault_mode==6)) vif.ram_wr_en_i = 1'b1;
+          vif.ram_addr_i = snap.addr;
+          vif.ram_wr_data_i = snap.data;
+          vif.ram_wr_strb_i = snap.strb;
+          vif.ram_issue_ticket_i = snap.ticket;
         end
         SBM_RESET: begin
           vif.rst_n = 1'b0;
-          vif.coherent_isolation_proven_i = tr.isolation;
+          vif.coherent_isolation_proven_i = snap.isolation;
           vif.platform_zero_init_i = 1'b1;
         end
-        SBM_INIT: begin
-          vif.coherent_isolation_proven_i = tr.isolation;
-          vif.platform_zero_init_i = 1'b1;
-        end
-        SBM_INIT_HOLD: begin
-          vif.coherent_isolation_proven_i = tr.isolation;
+        SBM_INIT, SBM_INIT_HOLD: begin
+          vif.coherent_isolation_proven_i = snap.isolation;
           vif.platform_zero_init_i = 1'b1;
         end
         SBM_BOTH: begin
           vif.ram_rd_en_i = 1'b1;
           vif.ram_wr_en_i = 1'b1;
-          vif.ram_addr_i = tr.addr;
-          vif.ram_wr_data_i = tr.data;
-          vif.ram_wr_strb_i = tr.strb;
-          vif.ram_issue_ticket_i = tr.ticket;
+          vif.ram_addr_i = snap.addr;
+          vif.ram_wr_data_i = snap.data;
+          vif.ram_wr_strb_i = snap.strb;
+          vif.ram_issue_ticket_i = snap.ticket;
         end
         SBM_X_RD: begin
           vif.ram_rd_en_i = 1'bx;
-          vif.ram_addr_i = tr.addr;
-          vif.ram_issue_ticket_i = tr.ticket;
+          vif.ram_addr_i = snap.addr;
+          vif.ram_issue_ticket_i = snap.ticket;
         end
         default: ;
       endcase
-      repeat ((tr.hold_cycles > 0) ? tr.hold_cycles : 1) @(posedge vif.clk);
+      if (inject && fault_mode == 3) vif.ram_issue_ticket_i = snap.ticket ^ SBM_TICKET_W'(1);
+      @(posedge vif.clk);
+      if (inject && fault_mode == 2) @(posedge vif.clk); // deliberate extra WE
+      repeat ((snap.hold_cycles > 0) ? snap.hold_cycles-1 : 0) begin
+        @(negedge vif.clk);
+        if (snap.op inside {SBM_READ,SBM_WRITE,SBM_BOTH,SBM_X_RD}) begin
+          vif.ram_rd_en_i = 1'b0;
+          vif.ram_wr_en_i = 1'b0;
+        end
+        @(posedge vif.clk);
+      end
+      $cast(event_copy,snap.clone());
+      complete_ap.write(event_copy);
       seq_item_port.item_done();
+      repeat (snap.gap_cycles) begin
+        @(negedge vif.clk);
+        drive_idle();
+      end
     end
   endtask
   function void drive_idle();

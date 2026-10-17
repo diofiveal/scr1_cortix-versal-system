@@ -1,0 +1,7 @@
+requirement_id,test_case,checker,status,gate
+UVM-01,SBM_CASE=0;1;2;3;4;5;6;7;8,sbm_intent_audit;sbm_driver_fixture_test,IMPLEMENTED,UVM simulator execution pending
+UVM-02,SBM_CASE=0;2;4;5;6;8;SBM_MUT=1;2;3;4,sbm_intent_audit,IMPLEMENTED,UVM simulator and mutation logs pending
+SBM-L2-020,SBM_CASE=8;SBM_MUT=3,sbm_intent_audit,IMPLEMENTED,Real RTL ticket receipt remains unverified
+SBM-L2-021,SBM_CASE=2;3;5;6,sbm_intent_audit,IMPLEMENTED,Real RTL registered commit receipt remains unverified
+SBM-L2-022,SBM_CASE=0;1;4;8,sbm_intent_audit,IMPLEMENTED,Real RTL read latency/snapshot remains unverified
+SBM-L2-032,SBM_CASE=9,sbm_intent_audit,IMPLEMENTED,Real RTL no-op receipt remains unverified

@@ -1,10 +1,13 @@
 class sbm_base_seq extends uvm_sequence #(sbm_item);
   `uvm_object_utils(sbm_base_seq)
+  `uvm_declare_p_sequencer(sbm_sequencer)
   static longint unsigned next_ticket = 64'h1357_0000;
   function new(string name="sbm_base_seq"); super.new(name); endfunction
   task send(sbm_op_e op, bit[13:0] addr=0, bit[31:0] data=0,
-            bit[3:0] mask=0, bit isolation=0, int unsigned cycles=1);
+            bit[3:0] mask=0, bit isolation=0, int unsigned cycles=1,
+            int unsigned gap=0);
     sbm_item tr = sbm_item::type_id::create("tr");
+    sbm_item intent;
     start_item(tr);
     tr.op = op;
     tr.addr = addr;
@@ -13,6 +16,13 @@ class sbm_base_seq extends uvm_sequence #(sbm_item);
     tr.ticket = SBM_TICKET_W'(next_ticket++);
     tr.isolation = isolation;
     tr.hold_cycles = cycles;
+    tr.gap_cycles = gap;
+    tr.intent_id = ++p_sequencer.next_intent_id;
+    // This immutable clone is published on the sequence side before the
+    // driver can fetch, acknowledge or lose the granted item.
+    $cast(intent,tr.clone());
+    if (intent == null) `uvm_fatal("SBM-CLONE","Sequence item clone failed")
+    p_sequencer.intent_ap.write(intent);
     finish_item(tr);
   endtask
 endclass

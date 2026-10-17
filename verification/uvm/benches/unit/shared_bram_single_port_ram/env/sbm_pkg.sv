@@ -4,6 +4,10 @@ package sbm_pkg;
   parameter int SBM_TICKET_W = 95;
   parameter int SBM_DEPTH = 16384;
   typedef virtual sbm_ram_if #(SBM_TICKET_W) sbm_vif_t;
+  `uvm_analysis_imp_decl(_intent)
+  `uvm_analysis_imp_decl(_accept)
+  `uvm_analysis_imp_decl(_complete)
+  `uvm_analysis_imp_decl(_cycle)
 
   typedef enum {SBM_IDLE, SBM_READ, SBM_WRITE, SBM_RESET,
                 SBM_INIT, SBM_INIT_HOLD, SBM_BOTH, SBM_X_RD} sbm_op_e;
@@ -16,6 +20,8 @@ package sbm_pkg;
     rand bit [SBM_TICKET_W-1:0] ticket;
     bit isolation;
     int unsigned hold_cycles = 1;
+    int unsigned gap_cycles = 0;
+    longint unsigned intent_id;
     `uvm_object_utils_begin(sbm_item)
       `uvm_field_enum(sbm_op_e, op, UVM_DEFAULT)
       `uvm_field_int(addr, UVM_DEFAULT)
@@ -24,6 +30,8 @@ package sbm_pkg;
       `uvm_field_int(ticket, UVM_DEFAULT)
       `uvm_field_int(isolation, UVM_DEFAULT)
       `uvm_field_int(hold_cycles, UVM_DEFAULT)
+      `uvm_field_int(gap_cycles, UVM_DEFAULT)
+      `uvm_field_int(intent_id, UVM_DEFAULT)
     `uvm_object_utils_end
     function new(string name="sbm_item"); super.new(name); endfunction
   endclass
@@ -51,9 +59,11 @@ package sbm_pkg;
   endclass
 
   `include "sbm_agent.svh"
+  `include "sbm_intent_audit.svh"
   `include "sbm_scoreboard.svh"
   `include "sbm_coverage.svh"
   `include "sbm_env.svh"
   `include "sbm_sequences.svh"
   `include "sbm_tests.svh"
+  `include "sbm_driver_tests.svh"
 endpackage

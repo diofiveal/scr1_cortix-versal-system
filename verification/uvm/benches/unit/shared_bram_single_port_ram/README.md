@@ -17,6 +17,10 @@ coverage closure and physical Vivado sign-off remain TODO/BLOCKED as below.
 - `tb/tb_sbm_ram.sv`: DUT pin adapter; elaboration requires real RTL.
 - `traceability.csv`, `corner_cases.csv`: 35 L2 IDs and 27 corner cases with
   planned checker/coverage IDs and evidence status.
+- `DRIVER_REVIEW.md`, `driver_traceability.csv`: UVM-01/UVM-02 timing,
+  component fixture cases, mutations and their current evidence gates.
+- `tb/tb_sbm_driver_fixture.sv`: independent UVM driver/interface fixture;
+  it is not a RAM DUT implementation.
 
 ## Compile and run on a UVM-capable simulator
 
