@@ -1,0 +1,20 @@
+test_name,top,READ_LATENCY,seed,plusargs,expected_outcome
+sbm_resilience_test,tb_sbm_ram,1,101,+SBM_MODE=1 +SBM_CASE=1,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=1,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,1,101,+SBM_MODE=1 +SBM_CASE=2,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=2,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,1,101,+SBM_MODE=1 +SBM_CASE=3,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=3,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,1,101,+SBM_MODE=1 +SBM_CASE=4,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=4,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,1,101,+SBM_MODE=1 +SBM_CASE=5,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=5,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,1,101,+SBM_MODE=1 +SBM_CASE=6,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=6,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=7,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,1,101,+SBM_MODE=1 +SBM_CASE=8,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=8,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,1,101,+SBM_MODE=1 +SBM_CASE=9,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=9,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,1,101,+SBM_MODE=1 +SBM_CASE=10,PASS expected; execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=10,PASS expected; execution pending

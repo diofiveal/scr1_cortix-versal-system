@@ -1,0 +1,28 @@
+corner_case_id,plan_objective_id,test_classes,coverage_group,status,open_gate
+SBM-CC-01,SBM-VT-CC-01,sbm_full_scan_test;sbm_resilience_test(RST-03),SBM-COV-02; SBM-COV-03,BLOCKED,Unit stimulus source only; RTL simulation pending; actual fabric isolation requires L1 proof
+SBM-CC-02,SBM-VT-CC-02,sbm_full_scan_test,SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
+SBM-CC-03,SBM-VT-CC-03,sbm_full_scan_test;sbm_resilience_test(RST-04;05),SBM-COV-02; SBM-COV-03,BLOCKED,Unit stimulus source only; RTL simulation pending; actual fabric isolation requires L1 proof
+SBM-CC-04,SBM-VT-CC-04,,SBM-COV-02,BLOCKED,peer signal/RTL absent
+SBM-CC-05,SBM-VT-CC-05,,SBM-COV-02,BLOCKED,peer signal/RTL absent
+SBM-CC-06,SBM-VT-CC-06,sbm_base_test;sbm_resilience_test(NEG-02),SBM-COV-01,IMPLEMENTED,Unit stimulus source only; RTL simulation pending; actual fabric isolation requires L1 proof
+SBM-CC-07,SBM-VT-CC-07,sbm_base_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
+SBM-CC-08,SBM-VT-CC-08,sbm_base_test,SBM-COV-01,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
+SBM-CC-09,SBM-VT-CC-09,sbm_base_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
+SBM-CC-10,SBM-VT-CC-10,,SBM-COV-04,BLOCKED,Vivado netlist gate
+SBM-CC-11,SBM-VT-CC-11,sbm_full_scan_test;sbm_repeat_init_test,SBM-COV-03; SBM-COV-04,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
+SBM-CC-12,SBM-VT-CC-12,sbm_base_test,SBM-COV-01,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
+SBM-CC-13,SBM-VT-CC-13,sbm_base_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
+SBM-CC-14,SBM-VT-CC-14,sbm_base_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
+SBM-CC-15,SBM-VT-CC-15,sbm_base_test;sbm_resilience_test(NEG-02),SBM-COV-01,IMPLEMENTED,Unit stimulus source only; RTL simulation pending; actual fabric isolation requires L1 proof
+SBM-CC-16,SBM-VT-CC-16,sbm_full_scan_test,SBM-COV-02; SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
+SBM-CC-17,SBM-VT-CC-17,sbm_unqualified_init_test;sbm_resilience_test(RST-02),SBM-COV-02; SBM-COV-03,IMPLEMENTED,Unit stimulus source only; RTL simulation pending; actual fabric isolation requires L1 proof
+SBM-CC-18,SBM-VT-CC-18,sbm_resilience_test(RST-07),SBM-COV-02; SBM-COV-05,BLOCKED,Unit stimulus source only; RTL simulation pending; actual fabric isolation requires L1 proof
+SBM-CC-19,SBM-VT-CC-19,sbm_full_scan_test;sbm_repeat_init_test,SBM-COV-02; SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
+SBM-CC-20,SBM-VT-CC-20,,SBM-COV-04,BLOCKED,Vivado netlist gate
+SBM-CC-21,SBM-VT-CC-21,,SBM-COV-04,BLOCKED,Vivado netlist gate
+SBM-CC-22,SBM-VT-CC-22,sbm_illegal_control_test,SBM-COV-04,BLOCKED,X-injection authored; pin freeze and simulator execution pending
+SBM-CC-23,SBM-VT-CC-23,,SBM-COV-05,BLOCKED,peer signal/RTL absent
+SBM-CC-24,SBM-VT-CC-24,sbm_base_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
+SBM-CC-25,SBM-VT-CC-25,sbm_full_scan_test,SBM-COV-02; SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
+SBM-CC-26,SBM-VT-CC-26,,SBM-COV-02,BLOCKED,peer signal/RTL absent
+SBM-CC-27,SBM-VT-CC-27,,SBM-COV-04,BLOCKED,Vivado netlist gate
