@@ -1,0 +1,6 @@
+test_name,top,READ_LATENCY,seed,plusargs,expected_outcome
+sbm_timing_ticket_test,tb_sbm_ram,1,101,,PASS expected; execution pending
+sbm_timing_ticket_test,tb_sbm_ram,2,101,,PASS expected; execution pending
+sbm_full_scan_test,tb_sbm_ram,1,101,,PASS expected; execution pending
+sbm_full_scan_test,tb_sbm_ram,2,101,,PASS expected; execution pending
+sbm_missing_scan_test,tb_sbm_ram,2,101,,SBM-SCAN expected; execution pending

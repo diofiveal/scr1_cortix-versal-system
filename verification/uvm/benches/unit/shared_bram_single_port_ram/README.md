@@ -22,6 +22,9 @@ coverage closure and physical Vivado sign-off remain TODO/BLOCKED as below.
 - `TIMING_CONTRACT.md`, `TASK2_REVIEW.md`, `task2_mutations.csv`,
   `task2_coverage_status.csv`: edge-level contract, new tests, mutation targets,
   planned coverage and evidence gates.
+- `TASK3_REVIEW.md`, `env/sbm_resilience_tests.svh`, `env/sbm_watchdog.svh`,
+  `regressions/*.csv`, `task3_mutations.csv`, `task3_coverage_status.csv`:
+  reset history, deadlock checks, scenario sets and evidence gates.
 - `tb/tb_sbm_driver_fixture.sv`: independent UVM driver/interface fixture;
   it is not a RAM DUT implementation.
 
@@ -39,6 +42,8 @@ reviewed RTL source to `shared_bram_single_port_ram.f`. Define
 - `+UVM_TESTNAME=sbm_repeat_init_test`: repeat INIT and normal attempts during sweep.
 - `+UVM_TESTNAME=sbm_unqualified_init_test`: denied scrub without isolation.
 - `+UVM_TESTNAME=sbm_illegal_control_test`: simultaneous RD/WR and X command.
+- `+UVM_TESTNAME=sbm_resilience_test +SBM_MODE=1..4 +SBM_CASE=1..10`:
+  reset, stalls, negative stimuli or seeded stress; use regression manifests.
 
 Elaborate **twice** with `READ_LATENCY=1` and `READ_LATENCY=2`. Keep exact
 commands, tool version, seed, assertion outcomes and logs. A class/test being

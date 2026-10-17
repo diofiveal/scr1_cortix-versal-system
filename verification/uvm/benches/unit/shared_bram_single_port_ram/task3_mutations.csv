@@ -1,0 +1,13 @@
+mutation_id,fault,test_plusargs,read_latency,expected_checker,result,evidence
+MUT-R01,Drop READ receipt on unqualified reset,+SBM_MODE=1 +SBM_CASE=11,2,SBM-ASRT-03,INCONCLUSIVE,No RAM RTL or UVM simulator; no run log
+MUT-R02,Erase pending ticket without isolation,+SBM_MODE=1 +SBM_CASE=11,2,SBM-RESET,INCONCLUSIVE,No RAM RTL or UVM simulator; no run log
+MUT-R03,Assert INIT_DONE early,+SBM_MODE=1 +SBM_CASE=3,2,SBM-ASRT-07/08,INCONCLUSIVE,No RAM RTL or UVM simulator; no run log
+MUT-R04,Repeat an INIT zero write,+SBM_MODE=1 +SBM_CASE=3,2,SBM-ASRT-07,INCONCLUSIVE,No RAM RTL or UVM simulator; no run log
+MUT-R05,Normal WRITE during sweep,+SBM_MODE=2 +SBM_CASE=6,2,SBM-ASRT-09,INCONCLUSIVE,No RAM RTL or UVM simulator; no run log
+MUT-R06,Physical WE on WSTRB0,+SBM_MODE=3 +SBM_CASE=2,2,SBM-ASRT-05,INCONCLUSIVE,No RAM RTL or UVM simulator; no run log
+MUT-R07,Duplicate held READ,+SBM_MODE=2 +SBM_CASE=11,2,SBM-INTENT,INCONCLUSIVE,No RAM RTL or UVM simulator; no run log
+MUT-R08,Drop WRITE receipt,+SBM_MODE=2 +SBM_CASE=2,2,SBM-ASRT-04,INCONCLUSIVE,No RAM RTL or UVM simulator; no run log
+MUT-R09,Driver hangs before item_done,+SBM_MODE=2 +SBM_CASE=8 +SBM_DRIVER_FAULT=7,2,SBM-PROGRESS,INCONCLUSIVE,No RAM RTL or UVM simulator; no run log
+MUT-R10,INIT never finishes,+SBM_MODE=1 +SBM_CASE=3,2,SBM-PROGRESS,INCONCLUSIVE,No RAM RTL or UVM simulator; no run log
+MUT-R11,Stale old-epoch receipt after reinit,+SBM_MODE=1 +SBM_CASE=7,2,SBM-ASRT-03,INCONCLUSIVE,No RAM RTL or UVM simulator; no run log
+MUT-R12,Unqualified request starts scrub,+SBM_MODE=1 +SBM_CASE=2,2,SBM-RESET,INCONCLUSIVE,No RAM RTL or UVM simulator; no run log

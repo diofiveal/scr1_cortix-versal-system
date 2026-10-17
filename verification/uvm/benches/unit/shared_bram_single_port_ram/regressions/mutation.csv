@@ -1,0 +1,13 @@
+test_name,top,READ_LATENCY,seed,plusargs,expected_outcome
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=11,MUT-R01 checker SBM-ASRT-03 expected; mutation execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=11,MUT-R02 checker SBM-RESET expected; mutation execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=3,MUT-R03 checker SBM-ASRT-07/08 expected; mutation execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=3,MUT-R04 checker SBM-ASRT-07 expected; mutation execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=2 +SBM_CASE=6,MUT-R05 checker SBM-ASRT-09 expected; mutation execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=3 +SBM_CASE=2,MUT-R06 checker SBM-ASRT-05 expected; mutation execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=2 +SBM_CASE=11,MUT-R07 checker SBM-INTENT expected; mutation execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=2 +SBM_CASE=2,MUT-R08 checker SBM-ASRT-04 expected; mutation execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=2 +SBM_CASE=8 +SBM_DRIVER_FAULT=7,MUT-R09 checker SBM-PROGRESS expected; mutation execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=3,MUT-R10 checker SBM-PROGRESS expected; mutation execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=7,MUT-R11 checker SBM-ASRT-03 expected; mutation execution pending
+sbm_resilience_test,tb_sbm_ram,2,101,+SBM_MODE=1 +SBM_CASE=2,MUT-R12 checker SBM-RESET expected; mutation execution pending

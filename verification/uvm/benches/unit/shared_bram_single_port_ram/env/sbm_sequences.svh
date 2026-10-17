@@ -28,14 +28,36 @@ class sbm_base_seq extends uvm_sequence #(sbm_item);
   endtask
 endclass
 
-class sbm_init_seq extends sbm_base_seq;
+// Unit supervisor models qualification history, not real AXI isolation.
+class sbm_supervisor_seq extends sbm_base_seq;
+  `uvm_object_utils(sbm_supervisor_seq)
+  bit certificate_held;
+  function new(string name="sbm_supervisor_seq"); super.new(name); endfunction
+  task certify();
+    send(SBM_CERTIFY,0,0,0,1,2);
+    certificate_held=1;
+  endtask
+  task coherent_reset();
+    if (!certificate_held) `uvm_fatal("SBM-SUPERVISOR","No pre-reset certificate")
+    send(SBM_RESET,0,0,0,1,3);
+  endtask
+  task zero_init();
+    if (!certificate_held) `uvm_fatal("SBM-SUPERVISOR","No retained certificate")
+    send(SBM_INIT,0,0,0,1,3);
+    send(SBM_DROP_CERT);
+    certificate_held=0;
+  endtask
+endclass
+
+class sbm_init_seq extends sbm_supervisor_seq;
   `uvm_object_utils(sbm_init_seq)
   function new(string name="sbm_init_seq"); super.new(name); endfunction
   task body();
-    // The unit-level certificate is a mocked trusted input. The platform
-    // producer and pre-reset retention need a separate integration proof.
-    send(SBM_RESET,0,0,0,1,3);
-    send(SBM_INIT,0,0,0,1,3);
+    // Separate pre-reset certificate, reset request, platform init request.
+    // The certificate is testbench supplied; no fabric isolation is inferred.
+    certify();
+    coherent_reset();
+    zero_init();
   endtask
 endclass
 

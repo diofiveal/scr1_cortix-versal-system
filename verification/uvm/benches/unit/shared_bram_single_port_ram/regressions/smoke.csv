@@ -1,0 +1,3 @@
+test_name,top,READ_LATENCY,seed,plusargs,expected_outcome
+sbm_base_test,tb_sbm_ram,1,101,,PASS expected; execution pending
+sbm_base_test,tb_sbm_ram,2,101,,PASS expected; execution pending

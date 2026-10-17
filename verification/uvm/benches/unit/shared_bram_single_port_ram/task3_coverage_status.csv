@@ -1,0 +1,8 @@
+coverage_target,stimulus,checker,status,measured_hits,limitation
+reset_certificate_history,RST-02;03;04;06;07;11,sbm_scoreboard;sbm_watchdog,IMPLEMENTED,UNMEASURED,No RTL or simulator
+init_address_once,RST-03;04;05;06;10,sbm_scoreboard,IMPLEMENTED,UNMEASURED,No RTL or simulator
+read_write_issue_receipt,STALL-01;02;03;04;10,sbm_intent_audit;sbm_scoreboard,IMPLEMENTED,UNMEASURED,No RTL or simulator
+unknown_controls,NEG-03;04;05;06,sbm_scoreboard;sbm_ram_sva,IMPLEMENTED,UNMEASURED,No RTL or simulator
+all_wstrb_masks,stress;sbm_base_test,sbm_scoreboard,IMPLEMENTED,UNMEASURED,No RTL or simulator
+axi_isolation_and_cpu_task_reset,L1 integration,L1 checker,BLOCKED,UNMEASURED,Peer interfaces absent
+physical_bram_mapping,Vivado synthesis and STA,Vivado reports,BLOCKED,UNMEASURED,Physical proof absent

@@ -10,9 +10,12 @@ package sbm_pkg;
   `uvm_analysis_imp_decl(_accept)
   `uvm_analysis_imp_decl(_complete)
   `uvm_analysis_imp_decl(_cycle)
+  `uvm_analysis_imp_decl(_watch)
 
   typedef enum {SBM_IDLE, SBM_READ, SBM_WRITE, SBM_RESET,
-                SBM_INIT, SBM_INIT_HOLD, SBM_BOTH, SBM_X_RD} sbm_op_e;
+                SBM_INIT, SBM_INIT_HOLD, SBM_BOTH, SBM_X_RD,
+                SBM_CERTIFY, SBM_DROP_CERT, SBM_X_WR, SBM_X_STRB,
+                SBM_Z_RD, SBM_Z_WR, SBM_Z_STRB} sbm_op_e;
 
   class sbm_item extends uvm_sequence_item;
     rand sbm_op_e op;
@@ -68,9 +71,11 @@ package sbm_pkg;
   `include "sbm_agent.svh"
   `include "sbm_intent_audit.svh"
   `include "sbm_scoreboard.svh"
+  `include "sbm_watchdog.svh"
   `include "sbm_coverage.svh"
   `include "sbm_env.svh"
   `include "sbm_sequences.svh"
   `include "sbm_tests.svh"
+  `include "sbm_resilience_tests.svh"
   `include "sbm_driver_tests.svh"
 endpackage

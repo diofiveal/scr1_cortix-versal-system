@@ -40,6 +40,7 @@ module tb_sbm_ram;
 `endif
 
   initial begin
+    int unsigned driver_fault_mode;
     bus.rst_n = 0;
     bus.platform_zero_init_i = 0;
     bus.coherent_isolation_proven_i = 0;
@@ -51,6 +52,9 @@ module tb_sbm_ram;
     bus.ram_issue_ticket_i = 0;
     uvm_config_db#(sbm_vif_t)::set(null,"uvm_test_top*","vif",bus);
     uvm_config_db#(int unsigned)::set(null,"uvm_test_top.env.*","read_latency",READ_LATENCY);
+    if ($value$plusargs("SBM_DRIVER_FAULT=%d",driver_fault_mode))
+      uvm_config_db#(int unsigned)::set(null,"uvm_test_top.env.agent.drv",
+                                         "driver_fault_mode",driver_fault_mode);
     repeat (3) @(posedge clk);
     run_test("sbm_base_test");
   end

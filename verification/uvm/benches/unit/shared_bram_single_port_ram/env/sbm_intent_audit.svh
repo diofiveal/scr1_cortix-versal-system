@@ -43,7 +43,8 @@ class sbm_intent_audit extends uvm_component;
     if (!t.compare(intents[accepted]))
       bad($sformatf("Accepted item %0d differs from sequence snapshot",intents[accepted].intent_id));
     accepted++;
-    if (t.op inside {SBM_READ,SBM_WRITE,SBM_BOTH,SBM_X_RD}) begin
+    if (t.op inside {SBM_READ,SBM_WRITE,SBM_BOTH,SBM_X_RD,
+                     SBM_X_WR,SBM_X_STRB,SBM_Z_RD,SBM_Z_WR,SBM_Z_STRB}) begin
       $cast(snap,intents[accepted-1].clone());
       edge_pending.push_back(snap);
     end
@@ -66,12 +67,11 @@ class sbm_intent_audit extends uvm_component;
       if (!timed_out[i] && cycles-born[i] > 64) begin
         bad($sformatf("Sequence intent %0d not accepted within 64 edges",intents[i].intent_id));
         timed_out[i]=1;
-        `uvm_fatal("SBM-INTENT-TIMEOUT","Sequencer/driver failed to accept an item")
       end
     end
     if (completed < accepted && cycles-born[completed] >
         64 + intents[completed].hold_cycles + intents[completed].gap_cycles)
-      `uvm_fatal("SBM-ITEM-TIMEOUT","Driver accepted but never completed an item")
+      bad($sformatf("Driver accepted item %0d but did not complete it",intents[completed].intent_id));
     if (edge_pending.size()) begin
       t=edge_pending.pop_front();
       observed++;
@@ -87,6 +87,11 @@ class sbm_intent_audit extends uvm_component;
                     bad("Illegal simultaneous command lost");
         SBM_X_RD: if (c.rd !== 1'bx)
                     bad("X-control negative stimulus lost");
+        SBM_X_WR: if (c.wr !== 1'bx) bad("X-WR negative stimulus lost");
+        SBM_Z_RD: if (c.rd !== 1'bz) bad("Z-RD negative stimulus lost");
+        SBM_Z_WR: if (c.wr !== 1'bz) bad("Z-WR negative stimulus lost");
+        SBM_X_STRB: if (c.strb !== 4'bx) bad("X-WSTRB stimulus lost");
+        SBM_Z_STRB: if (c.strb !== 4'bz) bad("Z-WSTRB stimulus lost");
         default: ;
       endcase
       // A denied INIT-locked command, WSTRB0 and intentional illegal

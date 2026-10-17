@@ -29,6 +29,9 @@ class sbm_driver extends uvm_driver #(sbm_item);
     sbm_item tr, snap, event_copy;
     bit inject;
     drive_idle();
+    vif.coherent_isolation_proven_i = 1'b0;
+    // Power-on reset is distinct from the later qualified coherent reinit.
+    vif.rst_n = 1'b0;
     forever begin
       @(negedge vif.clk);
       drive_idle();
@@ -45,7 +48,8 @@ class sbm_driver extends uvm_driver #(sbm_item);
                 (fault_mode == 3 && snap.op inside {SBM_READ,SBM_WRITE}) ||
                 (fault_mode == 4 && snap.op == SBM_READ) ||
                 (fault_mode == 5 && snap.op == SBM_READ) ||
-                (fault_mode == 6 && snap.op == SBM_WRITE && |snap.strb));
+                (fault_mode == 6 && snap.op == SBM_WRITE && |snap.strb) ||
+                (fault_mode == 7 && snap.op == SBM_READ));
       if (inject) fault_fired = 1;
       if (inject && fault_mode == 4) begin
         // MUT-D04: acknowledge the item before its intended issue edge.
@@ -73,8 +77,9 @@ class sbm_driver extends uvm_driver #(sbm_item);
         SBM_RESET: begin
           vif.rst_n = 1'b0;
           vif.coherent_isolation_proven_i = snap.isolation;
-          vif.platform_zero_init_i = 1'b1;
         end
+        SBM_CERTIFY: vif.coherent_isolation_proven_i = 1'b1;
+        SBM_DROP_CERT: vif.coherent_isolation_proven_i = 1'b0;
         SBM_INIT, SBM_INIT_HOLD: begin
           vif.coherent_isolation_proven_i = snap.isolation;
           vif.platform_zero_init_i = 1'b1;
@@ -92,14 +97,36 @@ class sbm_driver extends uvm_driver #(sbm_item);
           vif.ram_addr_i = snap.addr;
           vif.ram_issue_ticket_i = snap.ticket;
         end
+        SBM_X_WR, SBM_Z_WR: begin
+          vif.ram_wr_en_i = (snap.op == SBM_X_WR) ? 1'bx : 1'bz;
+          vif.ram_addr_i = snap.addr;
+          vif.ram_issue_ticket_i = snap.ticket;
+        end
+        SBM_Z_RD: begin
+          vif.ram_rd_en_i = 1'bz;
+          vif.ram_addr_i = snap.addr;
+          vif.ram_issue_ticket_i = snap.ticket;
+        end
+        SBM_X_STRB, SBM_Z_STRB: begin
+          vif.ram_wr_en_i = 1'b1;
+          vif.ram_wr_strb_i = (snap.op == SBM_X_STRB) ? 4'bx : 4'bz;
+          vif.ram_addr_i = snap.addr;
+          vif.ram_wr_data_i = snap.data;
+          vif.ram_issue_ticket_i = snap.ticket;
+        end
         default: ;
       endcase
       if (inject && fault_mode == 3) vif.ram_issue_ticket_i = snap.ticket ^ SBM_TICKET_W'(1);
       @(posedge vif.clk);
+      if (inject && fault_mode == 7) begin
+        // MUT-R09: edge occurred, but sequencer handshake never completes.
+        forever @(posedge vif.clk);
+      end
       if (inject && fault_mode == 2) @(posedge vif.clk); // deliberate extra WE
       repeat ((snap.hold_cycles > 0) ? snap.hold_cycles-1 : 0) begin
         @(negedge vif.clk);
-        if (snap.op inside {SBM_READ,SBM_WRITE,SBM_BOTH,SBM_X_RD}) begin
+        if (snap.op inside {SBM_READ,SBM_WRITE,SBM_BOTH,SBM_X_RD,
+                            SBM_X_WR,SBM_X_STRB,SBM_Z_RD,SBM_Z_WR,SBM_Z_STRB}) begin
           vif.ram_rd_en_i = 1'b0;
           vif.ram_wr_en_i = 1'b0;
         end
@@ -117,7 +144,6 @@ class sbm_driver extends uvm_driver #(sbm_item);
   function void drive_idle();
     vif.rst_n = 1'b1;
     vif.platform_zero_init_i = 1'b0;
-    vif.coherent_isolation_proven_i = 1'b0;
     vif.ram_rd_en_i = 1'b0;
     vif.ram_wr_en_i = 1'b0;
     vif.ram_addr_i = '0;
