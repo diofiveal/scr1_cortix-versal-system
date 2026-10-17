@@ -5,7 +5,8 @@ class sbm_base_seq extends uvm_sequence #(sbm_item);
   function new(string name="sbm_base_seq"); super.new(name); endfunction
   task send(sbm_op_e op, bit[13:0] addr=0, bit[31:0] data=0,
             bit[3:0] mask=0, bit isolation=0, int unsigned cycles=1,
-            int unsigned gap=0);
+            int unsigned gap=0, bit use_ticket=0,
+            bit[SBM_TICKET_W-1:0] forced_ticket='0);
     sbm_item tr = sbm_item::type_id::create("tr");
     sbm_item intent;
     start_item(tr);
@@ -13,7 +14,7 @@ class sbm_base_seq extends uvm_sequence #(sbm_item);
     tr.addr = addr;
     tr.data = data;
     tr.strb = mask;
-    tr.ticket = SBM_TICKET_W'(next_ticket++);
+    tr.ticket = use_ticket ? forced_ticket : SBM_TICKET_W'(next_ticket++);
     tr.isolation = isolation;
     tr.hold_cycles = cycles;
     tr.gap_cycles = gap;
@@ -73,6 +74,105 @@ class sbm_zero_scan_seq extends sbm_base_seq;
   task body();
     for (int unsigned a=0; a<SBM_DEPTH; a++)
       send(SBM_READ,14'(a));
+  endtask
+endclass
+
+class sbm_zero_scan_missing_seq extends sbm_base_seq;
+  `uvm_object_utils(sbm_zero_scan_missing_seq)
+  function new(string name="sbm_zero_scan_missing_seq"); super.new(name); endfunction
+  task body();
+    for (int unsigned a=0; a<SBM_DEPTH; a++)
+      if (a != 7777) send(SBM_READ,14'(a));
+  endtask
+endclass
+
+class sbm_address_pattern_seq extends sbm_base_seq;
+  `uvm_object_utils(sbm_address_pattern_seq)
+  function new(string name="sbm_address_pattern_seq"); super.new(name); endfunction
+  task body();
+    for (int unsigned a=0;a<SBM_DEPTH;a++)
+      send(SBM_WRITE,14'(a),32'h9e3779b9 ^ (32'(a)*32'h01010101),4'hf);
+    for (int unsigned a=0;a<SBM_DEPTH;a++)
+      send(SBM_READ,14'(a));
+  endtask
+endclass
+
+class sbm_ticket_seq extends sbm_base_seq;
+  `uvm_object_utils(sbm_ticket_seq)
+  function new(string name="sbm_ticket_seq"); super.new(name); endfunction
+  task body();
+    bit [SBM_TICKET_W-1:0] pattern;
+    // Same low 32 bits with different upper bits catches truncation.
+    send(SBM_WRITE,14'd911,32'ha1b2c3d4,4'hf,0,1,0,1,
+         {63'h1234567,32'hdeadbeef});
+    send(SBM_READ,14'd911,0,0,0,1,0,1,
+         {63'h7654321,32'hdeadbeef});
+    send(SBM_READ,14'd911,0,0,0,1,0,1,'1);
+    for (int i=0;i<SBM_TICKET_W;i++) begin
+      pattern='0;
+      pattern[i]=1;
+      send(SBM_READ,14'd911,0,0,0,1,0,1,pattern);
+      send(SBM_WRITE,14'd911,32'h01020408 ^ 32'(i),4'hf,0,1,0,1,~pattern);
+    end
+  endtask
+endclass
+
+class sbm_alternating_seq extends sbm_base_seq;
+  `uvm_object_utils(sbm_alternating_seq)
+  function new(string name="sbm_alternating_seq"); super.new(name); endfunction
+  task body();
+    for (int i=0;i<50;i++) begin
+      send(SBM_READ,14'd911);
+      send(SBM_WRITE,14'd911,32'(i) ^ 32'hff00aa55,4'hf);
+    end
+    send(SBM_WRITE,14'd911,32'hffeeddcc,4'hf);
+    send(SBM_READ,14'd911);
+    send(SBM_WRITE,14'd911,32'h12345678,4'h0);
+    send(SBM_WRITE,14'd911,32'h87654321,4'hf);
+    send(SBM_READ,14'd911);
+  endtask
+endclass
+
+// Stimulus for externally mutated RTL. This sequence contains no replacement
+// RAM behavior; a mutation is selected by the RTL build, not by the oracle.
+class sbm_mutation_probe_seq extends sbm_base_seq;
+  `uvm_object_utils(sbm_mutation_probe_seq)
+  int unsigned mutation_case;
+  function new(string name="sbm_mutation_probe_seq"); super.new(name); endfunction
+  task body();
+    case (mutation_case)
+      1,3,4,14: begin
+        send(SBM_READ,14'd919);
+        send(SBM_READ,14'd920);
+      end
+      2,15: begin
+        send(SBM_WRITE,14'd919,32'h11223344,4'hf);
+        send(SBM_READ,14'd919);
+        send(SBM_WRITE,14'd919,32'h88776655,4'hf);
+        send(SBM_READ,14'd919);
+      end
+      5,12,13: send(SBM_WRITE,14'd919,32'h12345678,4'hf);
+      6: begin
+        send(SBM_WRITE,14'd919,32'h10203040,4'hf);
+        for (int m=1;m<16;m++) begin
+          send(SBM_WRITE,14'd919,32'hda70babe ^ 32'(m),4'(m));
+          send(SBM_READ,14'd919);
+        end
+      end
+      7: begin
+        send(SBM_WRITE,14'd919,32'hffffffff,4'h0);
+        send(SBM_WRITE,14'd919,32'h11223344,4'hf);
+        send(SBM_READ,14'd919);
+      end
+      8,9,10,16: send(SBM_READ,14'd16383);
+      11: begin
+        send(SBM_READ,14'd919,0,0,0,1,0,1,
+             {63'h1234567,32'hdeadbeef});
+        send(SBM_READ,14'd919,0,0,0,1,0,1,
+             {63'h7654321,32'hdeadbeef});
+      end
+      default: `uvm_fatal("SBM-MUT","Unknown mutation probe case")
+    endcase
   endtask
 endclass
 

@@ -1,0 +1,6 @@
+coverage_id,implemented_observations,remaining_bins_or_evidence,latency1_result,latency2_result,status
+SBM-COV-01,physical operation/address class/mask/latency,pattern and read-write distance crosses,NO_RUN,NO_RUN,TODO
+SBM-COV-02,qualified reset and scrub scoreboard state,CPU-only/Task reset peer signals and pending-ticket crosses,NO_RUN,NO_RUN,BLOCKED
+SBM-COV-03,physical INIT index bitmap/final commit/normal overlap,INIT data-mask pins and isolation-age crosses,NO_RUN,NO_RUN,BLOCKED
+SBM-COV-04,none,primitive/ECC/second-port/timing Vivado evidence,NO_RUN,NO_RUN,BLOCKED
+SBM-COV-05,physical ticket class/op/latency cross,reset-distance and full ticket-variation crosses,NO_RUN,NO_RUN,TODO

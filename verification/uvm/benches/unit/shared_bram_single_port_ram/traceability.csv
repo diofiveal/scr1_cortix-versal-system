@@ -1,36 +1,36 @@
-requirement_id,planned_checker_id,plan_objective_id,implemented_test_classes,coverage_group,status,open_gate
-SBM-L2-001,SBM-CHK-001,SBM-VT-REQ-001,sbm_base_test,SBM-COV-01,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-002,SBM-CHK-002,SBM-VT-REQ-002,sbm_base_test,SBM-COV-01,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-003,SBM-CHK-003,SBM-VT-REQ-003,sbm_full_scan_test;sbm_repeat_init_test,SBM-COV-02; SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-004,SBM-CHK-004,SBM-VT-REQ-004,,SBM-COV-02,BLOCKED,peer integration interface absent
-SBM-L2-005,SBM-CHK-005,SBM-VT-REQ-005,,SBM-COV-02,BLOCKED,peer integration interface absent
-SBM-L2-006,SBM-CHK-006,SBM-VT-REQ-006,sbm_base_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-007,SBM-CHK-007,SBM-VT-REQ-007,,SBM-COV-04,BLOCKED,Vivado physical/netlist evidence
-SBM-L2-008,SBM-CHK-008,SBM-VT-REQ-008,,SBM-COV-02,BLOCKED,Vivado physical/netlist evidence
-SBM-L2-009,SBM-CHK-009,SBM-VT-REQ-009,sbm_full_scan_test;sbm_repeat_init_test,SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-010,SBM-CHK-010,SBM-VT-REQ-010,sbm_repeat_init_test,SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-011,SBM-CHK-011,SBM-VT-REQ-011,sbm_full_scan_test;sbm_repeat_init_test,SBM-COV-02; SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-012,SBM-CHK-012,SBM-VT-REQ-012,sbm_base_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-013,SBM-CHK-013,SBM-VT-REQ-013,,SBM-COV-04,BLOCKED,Vivado physical/netlist evidence
-SBM-L2-014,SBM-CHK-014,SBM-VT-REQ-014,,SBM-COV-04,BLOCKED,Vivado physical/netlist evidence
-SBM-L2-015,SBM-CHK-015,SBM-VT-REQ-015,sbm_base_test,SBM-COV-01,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-016,SBM-CHK-016,SBM-VT-REQ-016,sbm_full_scan_test;sbm_repeat_init_test,SBM-COV-02; SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-017,SBM-CHK-017,SBM-VT-REQ-017,,SBM-COV-02,BLOCKED,peer integration interface absent
-SBM-L2-018,SBM-CHK-018,SBM-VT-REQ-018,sbm_base_test,SBM-COV-01,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-019,SBM-CHK-019,SBM-VT-REQ-019,,SBM-COV-04,BLOCKED,Vivado physical/netlist evidence
-SBM-L2-020,SBM-CHK-020,SBM-VT-REQ-020,sbm_base_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-021,SBM-CHK-021,SBM-VT-REQ-021,sbm_base_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-022,SBM-CHK-022,SBM-VT-REQ-022,sbm_base_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-023,SBM-CHK-023,SBM-VT-REQ-023,sbm_full_scan_test;sbm_repeat_init_test,SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-024,SBM-CHK-024,SBM-VT-REQ-024,sbm_unqualified_init_test,SBM-COV-02; SBM-COV-03,BLOCKED,Partial unit stimulus; trusted pre-reset proof / renewed isolation or upstream peer pending
-SBM-L2-025,SBM-CHK-025,SBM-VT-REQ-025,sbm_repeat_init_test,SBM-COV-02; SBM-COV-03,BLOCKED,Partial unit stimulus; trusted pre-reset proof / renewed isolation or upstream peer pending
-SBM-L2-026,SBM-CHK-026,SBM-VT-REQ-026,sbm_full_scan_test;sbm_repeat_init_test,SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-027,SBM-CHK-027,SBM-VT-REQ-027,,SBM-COV-02,BLOCKED,peer integration interface absent
-SBM-L2-028,SBM-CHK-028,SBM-VT-REQ-028,sbm_repeat_init_test,SBM-COV-04; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-029,SBM-CHK-029,SBM-VT-REQ-029,,SBM-COV-04,BLOCKED,Vivado physical/netlist evidence
-SBM-L2-030,SBM-CHK-030,SBM-VT-REQ-030,,SBM-COV-05,BLOCKED,peer integration interface absent
-SBM-L2-031,SBM-CHK-031,SBM-VT-REQ-031,sbm_base_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-032,SBM-CHK-032,SBM-VT-REQ-032,sbm_base_test,SBM-COV-01,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending
-SBM-L2-033,SBM-CHK-033,SBM-VT-REQ-033,sbm_full_scan_test;sbm_repeat_init_test,SBM-COV-02; SBM-COV-03,BLOCKED,Partial unit stimulus; trusted pre-reset proof / renewed isolation or upstream peer pending
-SBM-L2-034,SBM-CHK-034,SBM-VT-REQ-034,sbm_unqualified_init_test,SBM-COV-02; SBM-COV-03,BLOCKED,peer integration interface absent
-SBM-L2-035,SBM-CHK-035,SBM-VT-REQ-035,,SBM-COV-04,BLOCKED,Vivado physical/netlist evidence
+requirement_id,planned_checker_id,plan_objective_id,implemented_test_classes,coverage_group,status,open_gate,implemented_checker,evidence
+SBM-L2-001,SBM-CHK-001,SBM-VT-REQ-001,sbm_base_test,SBM-COV-01,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit;sbm_ram_sva,Source/static audit only; no UVM compilation or simulation
+SBM-L2-002,SBM-CHK-002,SBM-VT-REQ-002,sbm_base_test,SBM-COV-01,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit;sbm_ram_sva,Source/static audit only; no UVM compilation or simulation
+SBM-L2-003,SBM-CHK-003,SBM-VT-REQ-003,sbm_full_scan_test;sbm_repeat_init_test;sbm_missing_scan_test,SBM-COV-02; SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-004,SBM-CHK-004,SBM-VT-REQ-004,,SBM-COV-02,BLOCKED,peer integration interface absent,,External integration or Vivado evidence pending
+SBM-L2-005,SBM-CHK-005,SBM-VT-REQ-005,,SBM-COV-02,BLOCKED,peer integration interface absent,,External integration or Vivado evidence pending
+SBM-L2-006,SBM-CHK-006,SBM-VT-REQ-006,sbm_base_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-007,SBM-CHK-007,SBM-VT-REQ-007,,SBM-COV-04,BLOCKED,Vivado physical/netlist evidence,,External integration or Vivado evidence pending
+SBM-L2-008,SBM-CHK-008,SBM-VT-REQ-008,,SBM-COV-02,BLOCKED,Vivado physical/netlist evidence,,External integration or Vivado evidence pending
+SBM-L2-009,SBM-CHK-009,SBM-VT-REQ-009,sbm_full_scan_test;sbm_repeat_init_test;sbm_missing_scan_test,SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-010,SBM-CHK-010,SBM-VT-REQ-010,sbm_repeat_init_test,SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-011,SBM-CHK-011,SBM-VT-REQ-011,sbm_full_scan_test;sbm_repeat_init_test;sbm_missing_scan_test,SBM-COV-02; SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-012,SBM-CHK-012,SBM-VT-REQ-012,sbm_base_test;sbm_timing_ticket_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-013,SBM-CHK-013,SBM-VT-REQ-013,,SBM-COV-04,BLOCKED,Vivado physical/netlist evidence,,External integration or Vivado evidence pending
+SBM-L2-014,SBM-CHK-014,SBM-VT-REQ-014,,SBM-COV-04,BLOCKED,Vivado physical/netlist evidence,,External integration or Vivado evidence pending
+SBM-L2-015,SBM-CHK-015,SBM-VT-REQ-015,sbm_base_test;sbm_timing_ticket_test,SBM-COV-01,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-016,SBM-CHK-016,SBM-VT-REQ-016,sbm_full_scan_test;sbm_repeat_init_test;sbm_missing_scan_test,SBM-COV-02; SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-017,SBM-CHK-017,SBM-VT-REQ-017,,SBM-COV-02,BLOCKED,peer integration interface absent,,External integration or Vivado evidence pending
+SBM-L2-018,SBM-CHK-018,SBM-VT-REQ-018,sbm_base_test,SBM-COV-01,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit;sbm_ram_sva,Source/static audit only; no UVM compilation or simulation
+SBM-L2-019,SBM-CHK-019,SBM-VT-REQ-019,,SBM-COV-04,BLOCKED,Vivado physical/netlist evidence,,External integration or Vivado evidence pending
+SBM-L2-020,SBM-CHK-020,SBM-VT-REQ-020,sbm_base_test;sbm_timing_ticket_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-021,SBM-CHK-021,SBM-VT-REQ-021,sbm_base_test;sbm_timing_ticket_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-022,SBM-CHK-022,SBM-VT-REQ-022,sbm_base_test;sbm_timing_ticket_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-023,SBM-CHK-023,SBM-VT-REQ-023,sbm_full_scan_test;sbm_repeat_init_test,SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit;sbm_ram_sva,Source/static audit only; no UVM compilation or simulation
+SBM-L2-024,SBM-CHK-024,SBM-VT-REQ-024,sbm_unqualified_init_test,SBM-COV-02; SBM-COV-03,BLOCKED,Partial unit stimulus; trusted pre-reset proof / renewed isolation or upstream peer pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-025,SBM-CHK-025,SBM-VT-REQ-025,sbm_repeat_init_test,SBM-COV-02; SBM-COV-03,BLOCKED,Partial unit stimulus; trusted pre-reset proof / renewed isolation or upstream peer pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-026,SBM-CHK-026,SBM-VT-REQ-026,sbm_full_scan_test;sbm_repeat_init_test;sbm_missing_scan_test,SBM-COV-03,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-027,SBM-CHK-027,SBM-VT-REQ-027,,SBM-COV-02,BLOCKED,peer integration interface absent,,External integration or Vivado evidence pending
+SBM-L2-028,SBM-CHK-028,SBM-VT-REQ-028,sbm_repeat_init_test,SBM-COV-04; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit;sbm_ram_sva,Source/static audit only; no UVM compilation or simulation
+SBM-L2-029,SBM-CHK-029,SBM-VT-REQ-029,,SBM-COV-04,BLOCKED,Vivado physical/netlist evidence,,External integration or Vivado evidence pending
+SBM-L2-030,SBM-CHK-030,SBM-VT-REQ-030,,SBM-COV-05,BLOCKED,peer integration interface absent,,External integration or Vivado evidence pending
+SBM-L2-031,SBM-CHK-031,SBM-VT-REQ-031,sbm_base_test;sbm_timing_ticket_test,SBM-COV-01; SBM-COV-05,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-032,SBM-CHK-032,SBM-VT-REQ-032,sbm_base_test;sbm_timing_ticket_test,SBM-COV-01,IMPLEMENTED,RTL pin freeze; compile/simulation and coverage evidence pending,sbm_scoreboard;sbm_intent_audit;sbm_ram_sva,Source/static audit only; no UVM compilation or simulation
+SBM-L2-033,SBM-CHK-033,SBM-VT-REQ-033,sbm_full_scan_test;sbm_repeat_init_test;sbm_missing_scan_test,SBM-COV-02; SBM-COV-03,BLOCKED,Partial unit stimulus; trusted pre-reset proof / renewed isolation or upstream peer pending,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-034,SBM-CHK-034,SBM-VT-REQ-034,sbm_unqualified_init_test,SBM-COV-02; SBM-COV-03,BLOCKED,peer integration interface absent,sbm_scoreboard;sbm_intent_audit,Source/static audit only; no UVM compilation or simulation
+SBM-L2-035,SBM-CHK-035,SBM-VT-REQ-035,,SBM-COV-04,BLOCKED,Vivado physical/netlist evidence,,External integration or Vivado evidence pending

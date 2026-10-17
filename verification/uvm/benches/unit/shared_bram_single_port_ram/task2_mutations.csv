@@ -1,0 +1,17 @@
+mutation_id,stimulus_selector,fault_to_inject_in_RTL,expected_checker,status,evidence_gate
+SBM-MUT-T02-01,SBM_MUT_CASE=1,Wrong READ_LATENCY,SBM-ASRT-03,BLOCKED,RTL mutant and simulation log absent
+SBM-MUT-T02-02,SBM_MUT_CASE=2,READ snapshot after intervening WRITE,SBM-ASRT-03,BLOCKED,RTL mutant and simulation log absent
+SBM-MUT-T02-03,SBM_MUT_CASE=3,Lost READ receipt,SBM-ASRT-03,BLOCKED,RTL mutant and simulation log absent
+SBM-MUT-T02-04,SBM_MUT_CASE=4,Duplicate READ receipt,SBM-ASRT-03,BLOCKED,RTL mutant and simulation log absent
+SBM-MUT-T02-05,SBM_MUT_CASE=5,Wrong WRITE ticket,SBM-ASRT-04,BLOCKED,RTL mutant and simulation log absent
+SBM-MUT-T02-06,SBM_MUT_CASE=6,Wrong byte-lane mapping,SBM-ASRT-02;SBM-ASRT-03,BLOCKED,RTL mutant and simulation log absent
+SBM-MUT-T02-07,SBM_MUT_CASE=7,Physical WE for WSTRB0,SBM-ASRT-05,BLOCKED,RTL mutant and simulation log absent
+SBM-MUT-T02-08,SBM_MUT_CASE=8,Skip INIT word,SBM-ASRT-07,BLOCKED,RTL mutant and simulation log absent
+SBM-MUT-T02-09,SBM_MUT_CASE=9,Duplicate INIT word,SBM-ASRT-07,BLOCKED,RTL mutant and simulation log absent
+SBM-MUT-T02-10,SBM_MUT_CASE=10,Early INIT_DONE,SBM-ASRT-08,BLOCKED,RTL mutant and simulation log absent
+SBM-MUT-T02-11,SBM_MUT_CASE=11,Truncate upper ticket bits,SBM-ASRT-03,BLOCKED,RTL mutant and simulation log absent
+SBM-MUT-T02-12,SBM_MUT_CASE=12,Duplicate WRITE receipt,SBM-ASRT-04,BLOCKED,RTL mutant and simulation log absent
+SBM-MUT-T02-13,SBM_MUT_CASE=13,Early combinational WRITE receipt,SBM-ASRT-04,BLOCKED,RTL mutant and simulation log absent
+SBM-MUT-T02-14,SBM_MUT_CASE=14,Delayed READ receipt,SBM-ASRT-03,BLOCKED,RTL mutant and simulation log absent
+SBM-MUT-T02-15,SBM_MUT_CASE=15,Wrong READ snapshot,SBM-ASRT-03,BLOCKED,RTL mutant and simulation log absent
+SBM-MUT-T02-16,SBM_MUT_CASE=16,Wrong INIT address,SBM-ASRT-07,BLOCKED,RTL mutant and simulation log absent

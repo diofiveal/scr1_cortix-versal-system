@@ -27,6 +27,9 @@ class sbm_base_test extends uvm_test;
     phase.raise_objection(this);
     init.start(env.agent.seqr);
     wait_initialized();
+    // Let the monitor publish DONE's post-NBA edge before a test starts a
+    // scoreboard scan or issues the first normal command.
+    @(negedge vif.clk);
     scenario();
     repeat (8) @(posedge vif.clk);
     phase.drop_objection(this);
@@ -55,16 +58,88 @@ endclass
 class sbm_full_scan_test extends sbm_base_test;
   `uvm_component_utils(sbm_full_scan_test)
   function new(string name,uvm_component parent); super.new(name,parent); endfunction
-  task scenario();
+  virtual task run_scan();
     sbm_zero_scan_seq scan = sbm_zero_scan_seq::type_id::create("scan");
-    sbm_mask_seq masks = sbm_mask_seq::type_id::create("masks");
     scan.start(env.agent.seqr);
+  endtask
+  task scenario();
+    sbm_mask_seq masks = sbm_mask_seq::type_id::create("masks");
+    env.scoreboard.start_zero_scan();
+    run_scan();
+    repeat (4) begin @(posedge vif.clk); #1step; end
+    env.scoreboard.finish_zero_scan();
     masks.start(env.agent.seqr);
   endtask
-  function void report_phase(uvm_phase phase);
-    super.report_phase(phase);
+endclass
+
+// Expected negative test: the checker must report SBM-SCAN for address 7777.
+class sbm_missing_scan_test extends sbm_full_scan_test;
+  `uvm_component_utils(sbm_missing_scan_test)
+  function new(string name,uvm_component parent); super.new(name,parent); endfunction
+  task run_scan();
+    sbm_zero_scan_missing_seq scan=sbm_zero_scan_missing_seq::type_id::create("scan");
+    scan.start(env.agent.seqr);
+  endtask
+endclass
+
+class sbm_timing_ticket_test extends sbm_base_test;
+  `uvm_component_utils(sbm_timing_ticket_test)
+  function new(string name,uvm_component parent); super.new(name,parent); endfunction
+  task scenario();
+    sbm_mask_seq masks=sbm_mask_seq::type_id::create("masks");
+    sbm_snapshot_seq snap=sbm_snapshot_seq::type_id::create("snap");
+    sbm_ticket_seq tickets=sbm_ticket_seq::type_id::create("tickets");
+    sbm_alternating_seq alternating=sbm_alternating_seq::type_id::create("alternating");
+    masks.start(env.agent.seqr);
+    snap.start(env.agent.seqr);
+    tickets.start(env.agent.seqr);
+    alternating.start(env.agent.seqr);
+  endtask
+  function void check_witness();
+    super.check_witness();
+    // 48/48 masks + 2/3 snapshot + 96/97 ticket + 52/52 alternating.
+    if (env.scoreboard.writes_checked!=198 || env.scoreboard.reads_checked!=200 ||
+        env.intent_audit.physical_writes!=198 || env.intent_audit.physical_reads!=200)
+      `uvm_error("SBM-WITNESS","Timing/ticket physical READ/WRITE cardinality mismatch")
+  endfunction
+endclass
+
+class sbm_address_pattern_test extends sbm_base_test;
+  `uvm_component_utils(sbm_address_pattern_test)
+  function new(string name,uvm_component parent); super.new(name,parent); endfunction
+  task scenario();
+    sbm_address_pattern_seq walk=sbm_address_pattern_seq::type_id::create("walk");
+    sbm_mask_seq masks=sbm_mask_seq::type_id::create("masks");
+    walk.start(env.agent.seqr);
+    masks.start(env.agent.seqr);
+  endtask
+  function void check_witness();
+    super.check_witness();
     if (env.scoreboard.reads_checked < SBM_DEPTH)
-      `uvm_error("SBM-WITNESS","Exhaustive zero-read scan did not complete")
+      `uvm_error("SBM-WITNESS","Address-pattern readback did not complete")
+  endfunction
+endclass
+
+class sbm_mutation_probe_test extends sbm_base_test;
+  `uvm_component_utils(sbm_mutation_probe_test)
+  int unsigned mutation_case;
+  function new(string name,uvm_component parent); super.new(name,parent); endfunction
+  function void build_phase(uvm_phase phase);
+    super.build_phase(phase);
+    if (!$value$plusargs("SBM_MUT_CASE=%d",mutation_case) ||
+        !(mutation_case inside {[1:16]}))
+      `uvm_fatal("SBM-MUT","Supply +SBM_MUT_CASE=1..16")
+  endfunction
+  task scenario();
+    sbm_mutation_probe_seq probe=sbm_mutation_probe_seq::type_id::create("probe");
+    probe.mutation_case=mutation_case;
+    probe.start(env.agent.seqr);
+  endtask
+  function void check_witness();
+    if (env.scoreboard.completed_scrubs==0)
+      `uvm_error("SBM-WITNESS","Mutation probe lacked a completed INIT sweep")
+    // Expected mutation kills are UVM_ERRORs from the unmodified oracle.
+    // Do not turn them into a green simulation result here.
   endfunction
 endclass
 
@@ -81,6 +156,7 @@ class sbm_repeat_init_test extends sbm_base_test;
     repeated.start(env.agent.seqr);
     collision.start(env.agent.seqr);
     wait_initialized();
+    @(negedge vif.clk);
     masks.start(env.agent.seqr);
     repeat (8) @(posedge vif.clk);
     phase.drop_objection(this);

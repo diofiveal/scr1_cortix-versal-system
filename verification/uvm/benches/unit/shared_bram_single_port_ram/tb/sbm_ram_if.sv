@@ -18,4 +18,17 @@ interface sbm_ram_if #(parameter int TICKET_W = 95) (input logic clk);
   logic [13:0] init_addr_o;
   logic init_commit_o;
   logic bram_init_done_o, init_active_o, ram_idle_o, init_fault_o;
+  // Physical enables are sampled just before the edge that commits them.
+  clocking pre_cb @(posedge clk);
+    default input #1step;
+    input rst_n, platform_zero_init_i, coherent_isolation_proven_i;
+    input ram_rd_en_i, ram_wr_en_i, ram_addr_i, ram_wr_data_i;
+    input ram_wr_strb_i, ram_issue_ticket_i;
+    input physical_rd_en_o, physical_wr_en_o;
+    input init_write_en_o, init_addr_o;
+    input ram_rd_valid_o, ram_rd_data_o, ram_rd_ticket_o;
+    input ram_wr_commit_valid_o, ram_wr_commit_ticket_o;
+    input init_commit_o, bram_init_done_o, init_active_o;
+    input ram_idle_o, init_fault_o;
+  endclocking
 endinterface

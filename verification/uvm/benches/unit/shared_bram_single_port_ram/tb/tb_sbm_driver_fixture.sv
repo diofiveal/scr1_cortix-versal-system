@@ -17,8 +17,6 @@ module tb_sbm_driver_fixture;
     bus.ram_wr_data_i=0;
     bus.ram_wr_strb_i=0;
     bus.ram_issue_ticket_i=0;
-    bus.physical_rd_en_o=0;
-    bus.physical_wr_en_o=0;
     bus.init_write_en_o=0;
     bus.init_commit_o=0;
     bus.init_addr_o=0;
@@ -34,9 +32,7 @@ module tb_sbm_driver_fixture;
     uvm_config_db#(sbm_vif_t)::set(null,"uvm_test_top*","vif",bus);
     run_test("sbm_driver_fixture_test");
   end
-  always @(posedge clk) begin
-    bus.physical_rd_en_o <= (bus.ram_rd_en_i === 1'b1 && bus.ram_wr_en_i === 1'b0);
-    bus.physical_wr_en_o <= (bus.ram_wr_en_i === 1'b1 && bus.ram_rd_en_i === 1'b0)
-                            ? bus.ram_wr_strb_i : 4'b0;
-  end
+  assign bus.physical_rd_en_o = (bus.ram_rd_en_i === 1'b1 && bus.ram_wr_en_i === 1'b0);
+  assign bus.physical_wr_en_o = (bus.ram_wr_en_i === 1'b1 && bus.ram_rd_en_i === 1'b0)
+                                ? bus.ram_wr_strb_i : 4'b0;
 endmodule

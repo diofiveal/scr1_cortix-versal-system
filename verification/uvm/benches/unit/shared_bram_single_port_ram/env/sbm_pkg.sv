@@ -1,4 +1,6 @@
 package sbm_pkg;
+  timeunit 1ns;
+  timeprecision 1ps;
   import uvm_pkg::*;
   `include "uvm_macros.svh"
   parameter int SBM_TICKET_W = 95;
@@ -48,10 +50,15 @@ package sbm_pkg;
     logic [SBM_TICKET_W-1:0] ticket;
     logic pre_wr_valid, pre_rd_valid, pre_done, pre_active;
     logic [SBM_TICKET_W-1:0] pre_wr_ticket;
+    logic [SBM_TICKET_W-1:0] pre_rd_ticket;
+    logic [31:0] pre_rdata;
     logic [31:0] rdata;
     logic rvalid, wvalid, phys_rd, init_we, init_commit;
     logic [3:0] phys_we;
     logic [13:0] init_addr;
+    logic post_phys_rd, post_init_we;
+    logic [3:0] post_phys_we;
+    logic [13:0] post_init_addr;
     logic [SBM_TICKET_W-1:0] rticket, wticket;
     logic done, active, idle, fault;
     `uvm_object_utils(sbm_cycle)

@@ -3,6 +3,7 @@ class sbm_scoreboard extends uvm_component;
   uvm_analysis_imp #(sbm_cycle, sbm_scoreboard) imp;
   int unsigned latency = 2;
   bit [31:0] mem[SBM_DEPTH];
+  bit [SBM_DEPTH-1:0] known;
   bit initialized;
   bit [SBM_DEPTH-1:0] scrub_seen;
   int unsigned scrub_count, completed_scrubs;
@@ -12,11 +13,21 @@ class sbm_scoreboard extends uvm_component;
   int unsigned errors, reads_checked, writes_checked, zero_reads_checked;
   int unsigned during_scrub_attempts;
   bit unsafe_fault_seen;
+  bit qualified_epoch;
+  bit scan_active;
+  bit [SBM_DEPTH-1:0] scan_seen;
+  int unsigned scan_unique;
+  bit prev_post_valid;
+  logic prev_post_rvalid, prev_post_wvalid;
+  logic [SBM_TICKET_W-1:0] prev_post_rticket, prev_post_wticket;
+  logic [31:0] prev_post_rdata;
   int unsigned masks_seen[16];
   typedef struct packed {
     longint unsigned due;
     logic [31:0] data;
     logic [SBM_TICKET_W-1:0] ticket;
+    logic [13:0] addr;
+    bit scan;
   } expected_read_t;
   expected_read_t pending_reads[$];
   typedef struct packed {
@@ -37,6 +48,29 @@ class sbm_scoreboard extends uvm_component;
     errors++;
     `uvm_error(id,detail)
   endfunction
+  function void start_zero_scan();
+    if (!initialized || pending_reads.size()!=0)
+      bad("SBM-SCAN","Scan started before completed init or with pending reads");
+    scan_seen='0;
+    scan_unique=0;
+    scan_active=1;
+  endfunction
+  function void finish_zero_scan();
+    if (pending_reads.size())
+      bad("SBM-SCAN","Scan finished before all responses were checked");
+    scan_active=0;
+    if (scan_unique!=SBM_DEPTH || scan_seen !== '1)
+      bad("SBM-SCAN",$sformatf("Exhaustive zero scan visited %0d/%0d unique addresses",
+                              scan_unique,SBM_DEPTH));
+  endfunction
+  function void remember_post(sbm_cycle c);
+    prev_post_valid=1;
+    prev_post_rvalid=c.rvalid;
+    prev_post_wvalid=c.wvalid;
+    prev_post_rticket=c.rticket;
+    prev_post_wticket=c.wticket;
+    prev_post_rdata=c.rdata;
+  endfunction
   function void write(sbm_cycle c);
     expected_read_t er;
     expected_write_t ew;
@@ -50,12 +84,25 @@ class sbm_scoreboard extends uvm_component;
       bad("SBM-XZ",$sformatf("X/Z control at cycle %0d",c.cycle));
       return;
     end
+    // The pre-edge registered outputs must equal the previous edge's
+    // post-NBA outputs. A receipt that follows the new inputs combinationally
+    // is therefore rejected even when an older write was also outstanding.
+    if (prev_post_valid && c.rst_n) begin
+      if (c.pre_wr_valid !== prev_post_wvalid ||
+          c.pre_rd_valid !== prev_post_rvalid)
+        bad("SBM-ASRT-04","Receipt valid changed before the sampling edge");
+      if (c.pre_wr_valid && c.pre_wr_ticket !== prev_post_wticket)
+        bad("SBM-ASRT-04","Write ticket changed before the sampling edge");
+      if (c.pre_rd_valid &&
+          (c.pre_rd_ticket !== prev_post_rticket || c.pre_rdata !== prev_post_rdata))
+        bad("SBM-ASRT-03","Read payload changed before the sampling edge");
+    end
     if (c.phys_rd && (|c.phys_we || c.init_we))
       bad("SBM-ASRT-01","normal read overlaps a write");
     if (|c.phys_we && c.init_we)
       bad("SBM-ASRT-01","normal write overlaps INIT");
     if (c.init_we != c.init_commit)
-      bad("SBM-ASRT-07","INIT physical WE and commit observation disagree");
+      bad("SBM-ASRT-07","pre-edge INIT WE and post-edge commit disagree");
     if ($isunknown({c.rd,c.wr,c.strb}) || (c.rd && c.wr)) begin
       if (c.phys_rd || |c.phys_we)
         bad("SBM-ASRT-01","illegal/X command caused a physical normal operation");
@@ -68,21 +115,31 @@ class sbm_scoreboard extends uvm_component;
     if (!c.rst_n) begin
       if (c.init_req && c.isolation) begin
         initialized = 0;
+        known = '0;
         scrub_seen = '0;
         scrub_count = 0;
         scrub_started = 0;
         final_scrub_cycle = 0;
+        qualified_epoch = 1;
         pending_reads.delete();
         pending_writes.delete();
       end
       if (c.phys_rd || |c.phys_we || c.init_we || c.done)
         bad("SBM-ASRT-06","physical service or DONE during coherent reset");
       last_done = c.done;
+      remember_post(c);
       return;
     end
 
     if (c.init_we) begin
+      if ($isunknown(c.init_addr)) begin
+        bad("SBM-XZ","Unknown INIT address at physical write edge");
+        remember_post(c);
+        return;
+      end
       if (!scrub_started) begin
+        if (!qualified_epoch)
+          bad("SBM-ASRT-06","INIT write without a qualified coherent reset epoch");
         scrub_started = 1;
         scrub_seen = '0;
         scrub_count = 0;
@@ -93,7 +150,10 @@ class sbm_scoreboard extends uvm_component;
       if (scrub_seen[c.init_addr])
         bad("SBM-ASRT-07",$sformatf("duplicate INIT address %0d",c.init_addr));
       scrub_seen[c.init_addr] = 1'b1;
+      // The pin contract does not expose INIT data/byte-mask at the primitive.
+      // Zero contents must also be proven by the exhaustive readback scan.
       mem[c.init_addr] = '0;
+      known[c.init_addr] = 1;
       scrub_count++;
       if (scrub_count == SBM_DEPTH) final_scrub_cycle = c.cycle;
       if (scrub_count > SBM_DEPTH)
@@ -113,6 +173,7 @@ class sbm_scoreboard extends uvm_component;
       if (scrub_count == SBM_DEPTH && scrub_seen === '1) begin
         initialized = 1;
         completed_scrubs++;
+        qualified_epoch = 0;
       end
     end
     if (last_done && !c.done && !(c.init_req && c.isolation))
@@ -127,64 +188,84 @@ class sbm_scoreboard extends uvm_component;
     if (c.phys_we !== (normal_write ? c.strb : 4'b0))
       bad("SBM-ASRT-02",$sformatf("physical WE mismatch at cycle %0d",c.cycle));
 
-    // Process the edge's physical issues before responses. Read data is a
-    // snapshot of the model at issue, independent of later writes.
+    if ((c.phys_rd && $isunknown({c.addr,c.ticket})) ||
+        ((|c.phys_we) && $isunknown({c.addr,c.ticket,c.wdata,c.phys_we}))) begin
+      bad("SBM-XZ","Unknown physical normal address/data/ticket at issue edge");
+      remember_post(c);
+      return;
+    end
+
+    // The physical enables and address are sampled just before N. Model the
+    // snapshot/commit at N, then compare registered outputs after NBA at N.
     if (c.phys_rd) begin
       if (!initialized) bad("SBM-ASRT-09","read before qualified initialization");
+      if (!known[c.addr]) bad("SBM-MEM","Read from a word without a known model value");
       er.due = c.cycle + latency;
       er.data = mem[c.addr];
       er.ticket = c.ticket;
+      er.addr = c.addr;
+      er.scan = scan_active;
       pending_reads.push_back(er);
     end
     if (|c.phys_we) begin
       if (!initialized) bad("SBM-ASRT-09","write before qualified initialization");
+      if (!known[c.addr]) bad("SBM-MEM","Write to a word without a known model value");
       new_word = mem[c.addr];
       for (int lane=0; lane<4; lane++)
         if (c.phys_we[lane]) new_word[lane*8 +: 8] = c.wdata[lane*8 +: 8];
       mem[c.addr] = new_word;
+      known[c.addr] = 1;
       ew.issue = c.cycle;
       ew.ticket = c.ticket;
       pending_writes.push_back(ew);
       masks_seen[c.phys_we]++;
       writes_checked++;
     end
-    if (c.pre_wr_valid && c.wr && c.pre_wr_ticket === c.ticket)
-      bad("SBM-ASRT-04","current write ticket visible before issue edge");
     if (c.wr && c.strb == 0 && !c.rd) begin
       if (c.phys_we !== 0) bad("SBM-ASRT-05","zero strobe drove WE");
       zero_reads_checked++;
     end
 
-    if (c.rvalid) begin
-      if (pending_reads.size() == 0) bad("SBM-ASRT-03","orphan read receipt");
-      else begin
-        er = pending_reads.pop_front();
-        if (er.due != c.cycle || c.rticket !== er.ticket || c.rdata !== er.data)
-          bad("SBM-ASRT-03",$sformatf("cycle %0d: expected due %0d data %08h ticket %h, got %08h/%h",
-              c.cycle,er.due,er.data,er.ticket,c.rdata,c.rticket));
-        else reads_checked++;
-      end
+    while (pending_reads.size() && pending_reads[0].due < c.cycle) begin
+      er=pending_reads.pop_front();
+      bad("SBM-ASRT-03",$sformatf("Lost READ result due at %0d for addr %0d",er.due,er.addr));
     end
-    if (pending_reads.size() && pending_reads[0].due <= c.cycle)
-      bad("SBM-ASRT-03",$sformatf("missing/late read at cycle %0d",c.cycle));
+    if (pending_reads.size() && pending_reads[0].due == c.cycle) begin
+      er=pending_reads.pop_front();
+      if (!c.rvalid)
+        bad("SBM-ASRT-03",$sformatf("Missing READ result at cycle %0d addr %0d",c.cycle,er.addr));
+      else if (c.rticket !== er.ticket || c.rdata !== er.data)
+        bad("SBM-ASRT-03",$sformatf("cycle %0d addr %0d: data/ticket expected %08h/%h got %08h/%h",
+            c.cycle,er.addr,er.data,er.ticket,c.rdata,c.rticket));
+      else begin
+        reads_checked++;
+        if (er.scan) begin
+          if (er.data !== 32'b0)
+            bad("SBM-SCAN",$sformatf("Nonzero model word during zero scan at addr %0d",er.addr));
+          if (scan_seen[er.addr])
+            bad("SBM-SCAN",$sformatf("Duplicate zero-scan address %0d",er.addr));
+          else begin scan_seen[er.addr]=1; scan_unique++; end
+        end
+      end
+    end else if (c.rvalid)
+      bad("SBM-ASRT-03",$sformatf("Early/duplicate/orphan READ result at cycle %0d",c.cycle));
 
-    if (c.wvalid) begin
-      if (pending_writes.size() == 0) bad("SBM-ASRT-04","orphan write receipt (possibly INIT/no-op)");
-      else begin
-        ew = pending_writes.pop_front();
-        // The receipt is visible after the physical issue edge (NBA) and
-        // sampled by a sequential peer at the following edge.
-        if (ew.issue != c.cycle || c.wticket !== ew.ticket)
-          bad("SBM-ASRT-04",$sformatf("write receipt at %0d for issue %0d; ticket %h/%h",
-              c.cycle,ew.issue,c.wticket,ew.ticket));
-      end
+    while (pending_writes.size() && pending_writes[0].issue < c.cycle) begin
+      ew=pending_writes.pop_front();
+      bad("SBM-ASRT-04",$sformatf("Lost WRITE receipt for issue %0d",ew.issue));
     end
-    if (pending_writes.size() && pending_writes[0].issue <= c.cycle)
-      bad("SBM-ASRT-04","missing write commit receipt");
+    if (pending_writes.size() && pending_writes[0].issue == c.cycle) begin
+      ew=pending_writes.pop_front();
+      if (!c.wvalid || c.wticket !== ew.ticket)
+        bad("SBM-ASRT-04",$sformatf("Missing/wrong WRITE receipt at issue edge %0d ticket %h/%h",
+                                 c.cycle,ew.ticket,c.wticket));
+    end else if (c.wvalid)
+      bad("SBM-ASRT-04",$sformatf("Early/duplicate/orphan WRITE receipt at cycle %0d",c.cycle));
 
     if (c.idle && (c.active || c.init_we || c.rvalid || c.wvalid ||
                     pending_reads.size() || pending_writes.size()))
       bad("SBM-ASRT-14","RAM declares idle while service is pending");
+    remember_post(c);
   endfunction
   function void check_phase(uvm_phase phase);
     super.check_phase(phase);

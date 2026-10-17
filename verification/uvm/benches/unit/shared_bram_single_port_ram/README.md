@@ -19,6 +19,9 @@ coverage closure and physical Vivado sign-off remain TODO/BLOCKED as below.
   planned checker/coverage IDs and evidence status.
 - `DRIVER_REVIEW.md`, `driver_traceability.csv`: UVM-01/UVM-02 timing,
   component fixture cases, mutations and their current evidence gates.
+- `TIMING_CONTRACT.md`, `TASK2_REVIEW.md`, `task2_mutations.csv`,
+  `task2_coverage_status.csv`: edge-level contract, new tests, mutation targets,
+  planned coverage and evidence gates.
 - `tb/tb_sbm_driver_fixture.sv`: independent UVM driver/interface fixture;
   it is not a RAM DUT implementation.
 
@@ -30,6 +33,9 @@ reviewed RTL source to `shared_bram_single_port_ram.f`. Define
 
 - `+UVM_TESTNAME=sbm_base_test`: mask lanes and read snapshot/ticket ordering.
 - `+UVM_TESTNAME=sbm_full_scan_test`: exhaustive 64-KiB zero readback.
+- `+UVM_TESTNAME=sbm_missing_scan_test`: expected negative scan with one absent address.
+- `+UVM_TESTNAME=sbm_address_pattern_test`: full-array address-dependent readback.
+- `+UVM_TESTNAME=sbm_timing_ticket_test`: full-width ticket and back-to-back timing.
 - `+UVM_TESTNAME=sbm_repeat_init_test`: repeat INIT and normal attempts during sweep.
 - `+UVM_TESTNAME=sbm_unqualified_init_test`: denied scrub without isolation.
 - `+UVM_TESTNAME=sbm_illegal_control_test`: simultaneous RD/WR and X command.
@@ -70,9 +76,9 @@ SBM-L2-001..035; those physical and cross-peer requirements remain BLOCKED until
 their separate gates provide evidence.
 
 Functional coverage is a partial implementation of SBM-COV-01, SBM-COV-03
-and SBM-COV-05: operation, address class, mask and latency are sampled from
-physical monitor observations. Required pattern/distance, isolation-age,
-reset-distance and ticket-variation crosses remain TODO. SBM-COV-02 requires
+and SBM-COV-05: operation, address class, mask, ticket class and latency are
+sampled from physical monitor observations. Required pattern/distance,
+isolation-age, reset-distance and full ticket-variation crosses remain TODO. SBM-COV-02 requires
 upstream reset/retention signals; SBM-COV-04 requires mapped Vivado evidence.
 The CSV coverage IDs name plan targets, not coverage closure. No compile,
 simulation, mutation or Vivado result is claimed by these files.
