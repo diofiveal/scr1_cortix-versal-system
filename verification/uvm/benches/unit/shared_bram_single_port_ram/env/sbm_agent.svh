@@ -47,11 +47,19 @@ class sbm_driver extends uvm_driver #(sbm_item);
                 (fault_mode == 5 && snap.op == SBM_READ) ||
                 (fault_mode == 6 && snap.op == SBM_WRITE && |snap.strb));
       if (inject) fault_fired = 1;
+      if (inject && fault_mode == 4) begin
+        // MUT-D04: acknowledge the item before its intended issue edge.
+        // The sequence-side intent remains pending for the physical audit.
+        $cast(event_copy,snap.clone());
+        complete_ap.write(event_copy);
+        seq_item_port.item_done();
+        continue;
+      end
       // READ/WRITE (including illegal/zero-mask probes) occupies one edge.
       // Level-held RESET/INIT is intentionally a different contract.
       case (snap.op)
         SBM_READ: begin
-          if (!(inject && (fault_mode inside {1,4}))) vif.ram_rd_en_i = 1'b1;
+          if (!(inject && fault_mode==1)) vif.ram_rd_en_i = 1'b1;
           vif.ram_addr_i = (inject && fault_mode==5) ? (snap.addr ^ 14'd1) : snap.addr;
           vif.ram_issue_ticket_i = snap.ticket;
         end

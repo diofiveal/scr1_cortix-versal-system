@@ -40,6 +40,8 @@ For four mutation runs, use `+SBM_CASE=0 +SBM_MUT=1` (MUT-D01: drop READ),
 `+SBM_CASE=2 +SBM_MUT=2` (MUT-D02: duplicate WRITE),
 `+SBM_CASE=0 +SBM_MUT=3` (MUT-D03: corrupt ticket), and
 `+SBM_CASE=0 +SBM_MUT=4` (MUT-D04: complete without READ issue).
+MUT-D04 calls `item_done()` before the intended issue edge; MUT-D01 waits
+through that edge but suppresses the physical READ enable.
 Additional directed fault probes use `+SBM_CASE=0 +SBM_MUT=5` (wrong address)
 and `+SBM_CASE=2 +SBM_MUT=6` (dropped WRITE).
 Each mutation deliberately emits a UVM_ERROR; a failing simulation with the
